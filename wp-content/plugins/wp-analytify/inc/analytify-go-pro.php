@@ -119,7 +119,7 @@
 				<li><?php _e( 'Comparison Stats (Visitors & Views monthly/yearly)', 'wp-analytify' ) ?></li>
 				<li><?php _e( 'Live Stats', 'wp-analytify' ) ?></li>
 				<li><?php _e( 'ShortCodes', 'wp-analytify' ) ?></li>
-				<li><?php _e( 'Extentions', 'wp-analytify' ) ?></li>
+				<li><?php _e( 'Extensions', 'wp-analytify' ) ?></li>
 				<li><?php _e( 'Analytics under Custom Post Types (front/admin)', 'wp-analytify' ) ?></li>
 				<li><?php _e( 'Ajax & JS Error Stats', 'wp-analytify' ) ?></li>
 				<li><?php _e( '404 Page Error Stats', 'wp-analytify' ) ?></li>

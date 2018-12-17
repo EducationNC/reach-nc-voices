@@ -12,7 +12,7 @@ define( 'ANALYTIFY_LIB_PATH', dirname( __FILE__ ) . '/lib/' );
 define( 'ANALYTIFY_ID', 'wp-analytify-options' );
 define( 'ANALYTIFY_NICK', 'Analytify' );
 define( 'ANALYTIFY_ROOT_PATH', dirname( __FILE__ ) );
-define( 'ANALYTIFY_VERSION', '2.1.19' );
+define( 'ANALYTIFY_VERSION', '2.2.6' );
 define( 'ANALYTIFY_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ANALYTIFY_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
@@ -54,6 +54,8 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 		protected $load_settings;
 		protected $plugin_base;
 		protected $plugin_settings_base;
+		protected $cache_timeout;
+		private $exception;
 
 		/**
 		 * Constructer of analytify-general class.
@@ -61,8 +63,10 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 		function __construct() {
 
 			$this->transient_timeout    = 60 * 60 * 12;
+			// $this->cache_timeout    		= 60 * 60 * 24; // 24 hours into seconds. Use for transient cache.
 			$this->plugin_base          = 'admin.php?page=analytify-dashboard';
 			$this->plugin_settings_base = 'admin.php?page=analytify-settings';
+			$this->exception            = get_option( 'analytify_profile_exception' );
 
 			if ( ! class_exists( 'Analytify_Google_Client' ) ) {
 
@@ -120,6 +124,8 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 				}
 			}
 
+			add_action( 'admin_init', array( $this, 'set_cache_time' ) );
+
 		}
 
 
@@ -170,7 +176,7 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 		 * This function grabs the data from Google Analytics
 		 * For individual posts/pages.
 		 */
-		public function pa_get_analytics( $metrics, $start_date, $end_date, $dimensions = false, $sort = false, $filter = false, $limit = false ) {
+		public function pa_get_analytics( $metrics, $start_date, $end_date, $dimensions = false, $sort = false, $filter = false, $limit = false, $name = ''  ) {
 
 			try {
 
@@ -199,7 +205,27 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 					return false;
 				}
 
-				return $this->service->data_ga->get( 'ga:' . $profile_id, $start_date, $end_date, $metrics, $params );
+				$transient_key = 'analytify_transient_';
+				$cache_result  = get_transient( $transient_key . md5( $name . $profile_id . $start_date . $end_date . $filter ) );
+				$is_custom_api = $this->settings->get_option( 'user_advanced_keys', 'wp-analytify-advanced' );
+
+				if ( 'on' !== $is_custom_api ) {
+					// if exception, return if the cache result else return the error.
+					if ( $exception = get_transient( 'analytify_quota_exception' ) ) {
+						return $this->tackle_exception( $exception, $cache_result );
+					}
+				}
+
+				// if custom keys set. Fetch fresh result always.
+				if ( 'on' === $is_custom_api || $cache_result === false ) {
+					$result = $this->service->data_ga->get( 'ga:' . $profile_id, $start_date, $end_date, $metrics, $params );
+					set_transient( $transient_key . md5( $name . $profile_id . $start_date . $end_date . $filter ) , $result, $this->cache_timeout );
+					return $result;
+
+				} else {
+					return $cache_result;
+				}
+
 			} catch ( Analytify_Google_Service_Exception $e ) {
 
 				// Show error message only for logged in users.
@@ -232,7 +258,8 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 		 * This function grabs the data from Google Analytics
 		 * For dashboard.
 		 */
-		public function pa_get_analytics_dashboard( $metrics, $start_date, $end_date, $dimensions = false, $sort = false, $filter = false, $limit = false ) {
+		public function pa_get_analytics_dashboard( $metrics, $start_date, $end_date, $dimensions = false, $sort = false, $filter = false, $limit = false, $name = '' ) {
+
 
 			try {
 
@@ -259,28 +286,51 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 					return false;
 				}
 
-				return $this->service->data_ga->get( 'ga:' . $profile_id, $start_date, $end_date, $metrics, $params );
+				$transient_key = 'analytify_transient_';
+
+				$is_custom_api = $this->settings->get_option( 'user_advanced_keys', 'wp-analytify-advanced' );
+				$cache_result = get_transient( $transient_key . md5( $name . $profile_id . $start_date . $end_date . $filter ) );
+
+				if ( 'on' !== $is_custom_api ) {
+					// if exception, return if the cache result else return the error.
+					if ( $exception = get_transient( 'analytify_quota_exception' ) ) {
+						return $this->tackle_exception( $exception, $cache_result );
+					}
+				}
+
+				// if custom keys set. Fetch fresh result always.
+				if ( 'on' === $is_custom_api || $cache_result === false ) {
+					$result = $this->service->data_ga->get( 'ga:' . $profile_id, $start_date, $end_date, $metrics, $params );
+					set_transient( $transient_key . md5( $name . $profile_id . $start_date . $end_date . $filter ) , $result, $this->cache_timeout );
+					return $result;
+
+				} else {
+					return $cache_result;
+				}
+
 
 			} catch ( Analytify_Google_Service_Exception $e ) {
 
+				$logger = analytify_get_logger();
+				$logger->warning( $e->getMessage(), array( 'source' => 'analytify_fetch_data' ) );
+
+				set_transient( 'analytify_quota_exception', $e->getMessage(), HOUR_IN_SECONDS );
+
 				// Show error message only for logged in users.
 				if ( current_user_can( 'manage_options' ) ) {
-
-					echo "<div class=\"error-msg\">
-				<div class=\"wpb-error-box\">
-					<span class=\"blk\">
-						<span class=\"line\"></span>
-						<span class=\"dot\"></span>
-					</span>
-					<span class=\"information-txt\">";
-					print_r($e->getMessage());
-					//echo sprintf( esc_html__( '%1$s Oops, Something went wrong. %2$s %5$s %2$s %3$s Don\'t worry, This error message is only visible to Administrators. %4$s %2$s', 'wp-analytify' ), '<br /><br />', '<br />', '<i>', '</i>', esc_html( $e->getMessage() ) );
-					echo "</span>
-				</div>
-			</div>";
-
+				  $error_code = $e->getErrors();
+				  if ( $error_code[0]['reason'] == 'userRateLimitExceeded' ) {
+				    echo $this->show_error_box( 'API error: User Rate Limit Exceeded <a href="https://analytify.io/user-rate-limit-exceeded-guide" target="_blank" class="error_help">help?</a>' );
+				  } elseif( $error_code[0]['reason'] == 'dailyLimitExceeded' ) {
+						echo $this->show_error_box( 'API error: Daily Limit Exceeded <a href="https://analytify.io/daily-limit-exceeded" target="_blank" class="error_help">help?</a>' );
+					} else{
+				    echo $this->show_error_box( $e->getMessage() );
+				  }
 				}
 			} catch ( Analytify_Google_Auth_Exception $e ) {
+
+				$logger = analytify_get_logger();
+				$logger->warning( $e->getMessage(), array( 'source' => 'analytify_fetch_data' ) );
 
 				// Show error message only for logged in users.
 				if ( current_user_can( 'manage_options' ) ) {
@@ -288,6 +338,9 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 					echo sprintf( esc_html__( '%1$s Oops, Try to %3$s Reset %4$s Authentication. %2$s %7$s %2$s %5$s Don\'t worry, This error message is only visible to Administrators. %6$s %2$s', 'wp-analytify' ), '<br /><br />', '<br />', '<a href=' . esc_url( admin_url( 'admin.php?page=analytify-settings&tab=authentication' ) ) . ' title="Reset">', '</a>', '<i>', '</i>', esc_html( $e->getMessage() ) );
 				}
 			} catch ( Analytify_Google_IO_Exception $e ) {
+
+				$logger = analytify_get_logger();
+				$logger->warning( $e->getMessage(), array( 'source' => 'analytify_fetch_data' ) );
 
 				// Show error message only for logged in users.
 				if ( current_user_can( 'manage_options' ) ) {
@@ -464,7 +517,7 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 		function no_records() {
 			?>
 
-			<div class="error-msg">
+			<div class="analytify-stats-error-msg">
 				<div class="wpb-error-box">
 					<span class="blk">
 						<span class="line"></span>
@@ -475,6 +528,200 @@ if ( ! class_exists( 'Analytify_General' ) ) {
 			</div>
 
 			<?php
+		}
+
+		/**
+		 * Get Exception value.
+		 *
+		 * @since 2.1.22
+		 */
+		function get_exception() {
+			return $this->exception;
+		}
+
+		/**
+		 * Set Exception value.
+		 *
+		 * @since 2.1.22
+		 */
+		function set_exception( $exception ) {
+			$this->exception = $exception;
+		}
+
+		/**
+		* This function grabs the data from Google Analytics
+		* For dashboard.
+		*/
+		public function pa_get_analytics_dashboard_via_rest( $metrics, $start_date, $end_date, $dimensions = false, $sort = false, $filter = false, $limit = false, $name = '' ) {
+
+			try {
+
+				//$this->service = new Analytify_Google_Service_Analytics( $this->client );
+				$params        = array();
+
+				if ( $dimensions ) {
+					$params['dimensions'] = $dimensions;
+				}
+				if ( $sort ) {
+					$params['sort'] = $sort;
+				}
+				if ( $filter ) {
+					$params['filters'] = $filter;
+				}
+				if ( $limit ) {
+					$params['max-results'] = $limit;
+				}
+
+				// $profile_id = get_option("pt_webprofile_dashboard");
+				$profile_id = $this->settings->get_option( 'profile_for_dashboard', 'wp-analytify-profile' );
+
+				if ( ! $profile_id ) {
+					return false;
+				}
+
+				$is_custom_api = $this->settings->get_option( 'user_advanced_keys', 'wp-analytify-advanced' );
+				$cache_result = get_transient( md5( $name . $profile_id . $start_date . $end_date . $filter ) );
+
+				if ( 'on' !== $is_custom_api ) {
+
+					// if exception, return if the cache result else return the error.
+					if ( $exception = get_transient( 'analytify_quota_exception' ) ) {
+						if ( $cache_result ) {
+							return $cache_result;
+						}
+
+						return array( 'api_error' => $this->show_error_box( $exception ) );
+					}
+				}
+
+				// if custom keys set. Fetch fresh result always.
+				if ( 'on' === $is_custom_api || $cache_result === false ) {
+					$result = $this->service->data_ga->get( 'ga:' . $profile_id, $start_date, $end_date, $metrics, $params );
+					set_transient( md5( $name . $profile_id . $start_date . $end_date . $filter ) , $result, $this->cache_timeout );
+					return $result;
+
+				} else {
+					return $cache_result;
+				}
+
+
+			} catch ( Analytify_Google_Service_Exception $e ) {
+
+				set_transient( 'analytify_quota_exception', $e->getMessage(), HOUR_IN_SECONDS );
+				$logger = analytify_get_logger();
+				$logger->warning( $e->getMessage(), array( 'source' => 'analytify_fetch_data' ) );
+				// Show error message only for logged in users.
+				if ( current_user_can( 'manage_options' ) ) {
+
+				  $error_code = $e->getErrors();
+					$error = "<div class=\"analytify-stats-error-msg\">
+					<div class=\"wpb-error-box\">
+					<span class=\"blk\">
+					<span class=\"line\"></span>
+					<span class=\"dot\"></span>
+					</span>
+					<span class=\"information-txt\">";
+					if ( $error_code[0]['reason'] == 'userRateLimitExceeded'  ) {
+						$error .= 'API error: User Rate Limit Exceeded <a href="https://analytify.io/user-rate-limit-exceeded-guide" target="_blank" class="error_help">help</a>';
+					} elseif( $error_code[0]['reason'] == 'dailyLimitExceeded' ) {
+						$error .= 'API error: Daily Limit Exceeded <a href="https://analytify.io/daily-limit-exceeded" target="_blank" class="error_help">help?</a>';
+					} else{
+						$error .= $e->getMessage();
+					}
+					$error .= "</span>
+					</div>
+					</div>";
+
+					return array( 'api_error' => $error ) ;
+
+				}
+			} catch ( Analytify_Google_Auth_Exception $e ) {
+
+				$logger = analytify_get_logger();
+				$logger->warning( $e->getMessage(), array( 'source' => 'analytify_fetch_data' ) );
+				// Show error message only for logged in users.
+				if ( current_user_can( 'manage_options' ) ) {
+
+					$error = sprintf( esc_html__( '%1$s Oops, Try to %3$s Reset %4$s Authentication. %2$s %7$s %2$s %5$s Don\'t worry, This error message is only visible to Administrators. %6$s %2$s', 'wp-analytify' ), '<br /><br />', '<br />', '<a href=' . esc_url( admin_url( 'admin.php?page=analytify-settings&tab=authentication' ) ) . ' title="Reset">', '</a>', '<i>', '</i>', esc_html( $e->getMessage() ) );
+					return array( 'api_error' => $error ) ;
+
+				}
+			} catch ( Analytify_Google_IO_Exception $e ) {
+
+				$logger = analytify_get_logger();
+				$logger->warning( $e->getMessage(), array( 'source' => 'analytify_fetch_data' ) );
+				// Show error message only for logged in users.
+				if ( current_user_can( 'manage_options' ) ) {
+
+					$error = sprintf( esc_html__( '%1$s Oops! %2$s %5$s %2$s %3$s Don\'t worry, This error message is only visible to Administrators. %4$s %2$s', 'wp-analytify' ), '<br /><br />', '<br />', '<i>', '</i>', esc_html( $e->getMessage() ) );
+					return array( 'api_error' => $error ) ;
+
+				}
+			}
+		}
+
+		/**
+		 * Generate the Error box.
+		 *
+		 * @since 2.1.23
+		 */
+		protected function show_error_box( $message ) {
+			$error = '<div class="analytify-stats-error-msg">
+								<div class="wpb-error-box">
+									<span class="blk">
+										<span class="line"></span>
+										<span class="dot"></span>
+									</span>
+									<span class="information-txt">'
+									. $message .
+									'</span>
+								</div>
+							</div>';
+
+			return $error;
+
+		}
+
+		/**
+		 * If error, return cache result else return error.
+		 *
+		 * @since 2.1.23
+		 */
+		function tackle_exception ( $exception, $cache_result ) {
+			if ( $cache_result ) {
+				return $cache_result;
+			}
+
+			echo $this->show_error_box( $exception );
+		}
+
+
+
+		/**
+		 * Set Cache time for Stats.
+		 *
+		 * @since 2.2.1
+		 */
+		function set_cache_time() {
+			$this->cache_timeout = $this->get_cache_time();
+		}
+
+		/**
+		 * Get Cache time for Stats.
+		 *
+		 * @since 2.2.1
+		 */
+		function get_cache_time() {
+
+			// if cache is on set cache time to 10hours else 24hours.
+			$cache_time = $this->settings->get_option( 'delete_dashboard_cache','wp-analytify-dashboard','off' ) === 'on' ?  60 * 60 * 10 :  60 * 60 * 24;
+
+			if ( 'on' == $this->settings->get_option( 'user_advanced_keys','wp-analytify-advanced' ) ) {
+				$cache_time = apply_filters( 'analytify_stats_cache_time', $cache_time );
+			}
+
+			return $cache_time;
+
 		}
 
 	}

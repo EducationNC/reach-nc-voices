@@ -240,50 +240,53 @@ a.analytify-ga-button.button.button-primary{
   bottom: -5px;
   width: 55px;
 }
-    .wp-analytify-badge {
-      height: 200px;
-      width: 200px;
-      margin: -12px -5px;
-      background: url("<?php echo plugins_url( 'assets/images/welcome-analytify.png', __FILE__ ); ?>") no-repeat;
-      background-size: 100% auto;
-    }
-
-    .about-wrap .wp-analytify-badge {
-      position: absolute;
-      top: 0;
-      right: 0;
-    }
-
-    .wp-analytify-welcome-screenshots {
-      float: right;
-      margin-left: 10px !important;
-      border:1px solid #ccc;
-      padding:0;
-      box-shadow:4px 4px 0px rgba(0,0,0,.05)
-    }
-
-    .about-wrap .feature-section {
-      margin-top: 20px;
-    }
-
-    .about-wrap .feature-section p{
-      max-width: none !important;
-    }
-
-    .analytify-welcome-settings{
-      clear: both;
-      padding-top: 20px;
-    }
-    .wp-analytify-left-screenshot {
-      float: left !important;
-  }
-  html[dir="rtl"] .step-wrapper .step{
-    float: right;
-  }
-  html[dir="rtl"] .step-wrapper.slide{
-    -webkit-transform: translateX(50%);
-    transform: translateX(50%);
-  }
+.wp-analytify-badge {
+  height: 200px;
+  width: 200px;
+  margin: -12px -5px;
+  background: url("<?php echo plugins_url( 'assets/images/welcome-analytify.png', __FILE__ ); ?>") no-repeat;
+  background-size: 100% auto;
+}
+.about-wrap .wp-analytify-badge {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+.wp-analytify-welcome-screenshots {
+  float: right;
+  margin-left: 10px !important;
+  border:1px solid #ccc;
+  padding:0;
+  box-shadow:4px 4px 0px rgba(0,0,0,.05)
+}
+.about-wrap .feature-section {
+  margin-top: 20px;
+}
+.about-wrap .feature-section p{
+  max-width: none !important;
+}
+.analytify-welcome-settings{
+  clear: both;
+  padding-top: 20px;
+}
+.wp-analytify-left-screenshot {
+  float: left !important;
+}
+html[dir="rtl"] .step-wrapper .step{
+  float: right;
+}
+html[dir="rtl"] .step-wrapper.slide{
+  -webkit-transform: translateX(50%);
+  transform: translateX(50%);
+}
+.analytify-optin-loader{
+  margin-top: 35px;
+  display:none;
+}
+.analytify-skip-loader{
+  margin-left: 10px;
+  display:none;
+}
 </style>
 <?php
 
@@ -311,8 +314,8 @@ echo '<h1> <img id="analytify-logo-text" src="' . plugins_url( 'assets/images/no
     if ( get_site_option( '_analytify_optin' ) == 'no' || ! get_site_option( '_analytify_optin' ) ) {
     echo "<div class='first-step step'>";
       echo '<p id="analytify-splash-main-text">' .  sprintf ( __( 'Hey %2$s,  %4$s If you opt-in some data about your installation of Analytify will be sent to analytify.io (This doesn\'t include stats)%4$s and You will receive new feature updates, security notifications etc %7$sNo Spam, I promise.%8$s %4$s%4$s Help us %5$sImprove Google Analytics by Analytify%6$s %4$s %4$s ', 'wp-analytify' ), '<br>', '<strong>' . $name . '</strong>', '<strong>' . $website . '</strong>', '<br>', '<strong>', '</strong>', '<i>', '</i>' ) . '</p>';
-      echo "<button type='submit' id='analytify-ga-submit-btn' class='analytify-ga-button button button-primary' name='analytify-submit-optin' >" . __( 'Allow and Continue  ', 'analytify-ga') . "</button><br>";
-      echo "<button type='submit' id='analytify-ga-optout-btn' name='analytify-submit-optout' >" . __( 'Skip This Step', 'analytify-ga') . "</button>";
+      echo "<button type='submit' id='analytify-ga-submit-btn' class='analytify-ga-button button button-primary' name='analytify-submit-optin' >" . __( 'Allow and Continue  ', 'analytify-ga') . "</button><img class='analytify-optin-loader' src='". admin_url( 'images/spinner.gif' ) ."'/><br>";
+      echo "<button type='submit' id='analytify-ga-optout-btn' name='analytify-submit-optout' >" . __( 'Skip This Step', 'analytify-ga') . "</button><img class='analytify-skip-loader' src='". admin_url( 'images/spinner.gif' ) ."'/>";
       echo '<div id="analytify-splash-permissions" class="analytify-splash-box">';
         echo '<a id="analytify-splash-permissions-toggle" href="#" >' . __( 'What permissions are being granted?', 'wp-analytify' ) . '</a>';
         echo '<div id="analytify-splash-permissions-dropdown" style="display: none;">';
@@ -610,25 +613,39 @@ jQuery(document).ready(function(s) {
 
           $('#analytify-ga-submit-btn').on('click', function(e){
             e.preventDefault();
-            $('.step-wrapper').addClass('slide');
+            // $('.step-wrapper').addClass('slide');
             $.ajax({
               url: ajaxurl,
               type: 'POST',
               data: {
                 action: 'analytify_optin_yes'
+              },
+              beforeSend: function(){
+                $('#analytify-ga-submit-btn').attr('disabled', 'disabled');
+                $('.analytify-optin-loader').css('display', 'initial');
               }
+            })
+            .always(function() {
+              $(location).attr('href', '<?php echo esc_url( admin_url( 'admin.php?page=analytify-settings') ) ?>')
             });
           });
 
           $('#analytify-ga-optout-btn').on('click', function(event) {
             event.preventDefault();
-            $('.step-wrapper').addClass('slide');
+            // $('.step-wrapper').addClass('slide');
             $.ajax({
               url: ajaxurl,
               type: 'POST',
               data: {
                 action: 'analytify_optin_skip'
+              },
+              beforeSend: function(){
+                $('#analytify-ga-optout-btn').attr('disabled', 'disabled');
+                $('.analytify-skip-loader').css('display', 'initial');
               }
+            })
+            .always(function() {
+              $(location).attr('href', '<?php echo esc_url( admin_url( 'admin.php?page=analytify-settings') ) ?>')
             });
 
           });

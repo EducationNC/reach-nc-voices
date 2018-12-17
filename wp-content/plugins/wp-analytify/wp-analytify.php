@@ -3,12 +3,12 @@
  * Plugin Name: Analytify - Google Analytics Dashboard
  * Plugin URI: https://analytify.io/details
  * Description: Analytify brings a brand new and modern feeling Google Analytics superbly integrated with WordPress Dashboard. It presents the statistics in a beautiful way under the WordPress Posts/Pages at front end, backend and in its own Dashboard. This provides Stats from Country, Referrers, Social media, General stats, New visitors, Returning visitors, Exit pages, Browser wise and Top keywords. This plugin provides the RealTime statistics in a new UI which is easy to understand & looks good.
- * Version: 2.1.19
+ * Version: 2.2.6
  * Author: Analytify
  * Author URI: https://analytify.io
  * License: GPLv3
  * Text Domain: wp-analytify
- * Tested up to: 4.9
+ * Tested up to: 5.0
  * Domain Path: /languages
  *
  * @package WP_ANALYTIFY
@@ -36,7 +36,7 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 		 */
 		private static $instance = null;
 
-		protected 	$transient_timeout;
+		// protected 	$transient_timeout;
 		public 		$token  = false;
 		public 		$client = null;
 
@@ -81,8 +81,9 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 		 * @return      void
 		 */
 		private function setup_constants() {
-
 			// Setting Global Values.
+			$upload_dir = wp_upload_dir( null, false );
+			$this->define( 'ANALYTIFY_LOG_DIR', $upload_dir['basedir'] . '/analytify-logs/' );
 		}
 
 
@@ -131,11 +132,23 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 
 			//include_once ANALYTIFY_PLUGIN_DIR . '/welcome.php';
 			// require_once ANALYTIFY_PLUGIN_DIR . '/wp-analytify/inc/class-analytify-logging.php';
+
+			require_once ANALYTIFY_LIB_PATH . 'logs/class-analytify-log-handler-interface.php';
+			require_once ANALYTIFY_LIB_PATH . 'logs/class-analytify-logger-interface.php';
+			require_once ANALYTIFY_LIB_PATH . 'logs/class-analytify-log-levels.php';
+			require_once ANALYTIFY_LIB_PATH . 'logs/class-analytify-logger.php';
+			require_once ANALYTIFY_LIB_PATH . 'logs/abstract-analytify-log-handler.php';
+			require_once ANALYTIFY_LIB_PATH . 'logs/class-analytify-log-handler-file.php';
+			include_once ANALYTIFY_PLUGIN_DIR . '/classes/analytify-logs.php';
+
+
 			include_once ANALYTIFY_PLUGIN_DIR . '/inc/wpa-core-functions.php';
 
 			include_once ANALYTIFY_PLUGIN_DIR . '/inc/class-wpa-adminbar.php';
+			include_once ANALYTIFY_PLUGIN_DIR . '/classes/analytify-rest-api.php';
 			include_once ANALYTIFY_PLUGIN_DIR . '/inc/class-wpa-ajax.php';
 			include_once ANALYTIFY_PLUGIN_DIR . '/classes/class.upgrade.php';
+			include_once ANALYTIFY_PLUGIN_DIR . '/classes/analytify-dashboard-widget.php';
 
 			include_once ANALYTIFY_PLUGIN_DIR . '/classes/user_optout.php';
 
@@ -171,8 +184,8 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 			add_action( 'admin_notices', array( $this, 'analytify_admin_notice' ) );
 
 			add_action( 'wp_head', array( $this, 'analytify_add_analytics_code' ) );
+			// add_action( 'wp_head', array( $this, 'analytify_add_manual_analytics_code' ) );
 
-			add_action( 'wp_ajax_nopriv_get_ajax_single_admin_analytics', array( $this, 'get_ajax_single_admin_analytics' ) );
 			add_action( 'wp_ajax_get_ajax_single_admin_analytics', array( $this, 'get_ajax_single_admin_analytics' ) );
 
 			// Show analytics sections under the posts/pages in the metabox.
@@ -200,8 +213,19 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 			// add_action( 'after_plugin_row_wp-analytify/wp-analytify.php', array( $this, 'wpa_plugin_row'), 11, 2 );
 
 			add_action( 'wp_footer' , array( $this, 'track_miscellaneous_errors' ) );
-      add_action( 'admin_footer',	array( $this, 'add_deactive_modal' ) );
+			add_action( 'admin_footer',	array( $this, 'add_deactive_modal' ) );
 			add_action( 'admin_init', array( $this, 'redirect_optin' ) );
+
+			// add_action( 'admin_init', array( $this, 'analytify_buy_pro_notice' ) );
+			add_action( 'analytify_cleanup_logs', array( $this, 'analytify_cleanup_logs' ) );
+
+			// Optimzation,
+			// Update profile summary option for Newly installed users.
+			add_action( 'update_option_wp-analytify-profile', array( $this, 'update_profiles_list_summary' ), 10, 2 );
+
+			// Optimzation,
+			// Update profile summary option for already installed version.
+			add_action( 'admin_init', array( $this, 'update_profile_list_summary_on_update' ), 1 );
 
 		}
 
@@ -398,83 +422,118 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 		/**
 		 * Add Google Analytics JS code
 		 */
-		public function analytify_add_analytics_code() {
+		 public function analytify_add_analytics_code() {
 
-			if ( 'on' === $this->settings->get_option( 'install_ga_code', 'wp-analytify-profile', 'off' ) ) {
+			 if ( 'on' === $this->settings->get_option( 'install_ga_code', 'wp-analytify-profile', 'off' ) ) {
 
-				global $current_user;
+				 global $current_user;
 
-				$roles = $current_user->roles;
+				 $roles = $current_user->roles;
 
-				if ( isset( $roles[0] ) and in_array( $roles[0], $this->settings->get_option( 'exclude_users_tracking', 'wp-analytify-profile', array() ) ) ) {
+				 if ( isset( $roles[0] ) and in_array( $roles[0], $this->settings->get_option( 'exclude_users_tracking', 'wp-analytify-profile', array() ) ) ) {
 
-					echo '<!-- This user is disabled from tracking by Analytify !-->';
-				} else {
+					 echo '<!-- This user is disabled from tracking by Analytify !-->';
+				 } else {
 
-					if ( ! $this->settings->get_option( 'profile_for_posts', 'wp-analytify-profile' ) ) {
-						return;
-					}
+					 if ( ! $this->settings->get_option( 'profile_for_posts', 'wp-analytify-profile' ) ) {
+						 return;
+					 }
 
-					// Fetch Universel Analytics UA code for selected website.
-					$UA_CODE = WP_ANALYTIFY_FUNCTIONS::get_UA_code();
+					 // Fetch Universel Analytics UA code for selected website.
+					 $UA_CODE = WP_ANALYTIFY_FUNCTIONS::get_UA_code();
 
-					ob_start();
-					echo sprintf( esc_html__( '%2$s This code is added by WP Analytify (%1$s) %4$s %3$s', 'wp-analytify' ), ANALYTIFY_VERSION, '<!--', '!-->', 'https://analytify.io/downloads/analytify-wordpress-plugin/' );
-					?>
-					<script>
-						(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-							(i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-							m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-						})
+					 $ga_code = $this->output_ga_code( $UA_CODE );
+					 echo apply_filters( 'analytify_ga_script', $ga_code );
+				 }
+			 }
+		 }
 
-						(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-						<?php
-						if ( 'on' === $this->settings->get_option( 'linker_cross_domain_tracking', 'wp-analytify-advanced' ) ) {
-							echo "	ga('create', '{$UA_CODE}', 'auto', {'allowLinker': true});";
-							echo "ga('require', 'linker');";
-						} else {
-							echo "	ga('create', '{$UA_CODE}', 'auto');";
-						}
 
-						if ( 'on' === $this->settings->get_option( 'anonymize_ip', 'wp-analytify-advanced' ) ) {
-							echo "ga('set', 'anonymizeIp', true);";
-						}
+		/**
+		 * Add Google Manual Analytics JS code
+		 */
+		 public function analytify_add_manual_analytics_code() {
 
-						if ( 'on' === $this->settings->get_option( 'force_ssl', 'wp-analytify-advanced' ) ) {
-							echo "ga('set', 'forceSSL', true);";
-						}
+			 // Manuall UA Code.
+			 $UA_CODE = get_option( 'analytify_manual_ua_code' );
+			 if ( ! $UA_CODE ) {
+				 return;
+			 }
 
-						if ( 'on' === $this->settings->get_option( 'track_user_id', 'wp-analytify-advanced' ) && is_user_logged_in() ) {
-							echo "ga('set', 'userId', " . esc_html( get_current_user_id() ) . ');';
-						}
+			 // if profile is set, return.
+			 if ( WP_ANALYTIFY_FUNCTIONS::get_UA_code()) {
+				 return;
+			 }
 
-						if ( 'on' === $this->settings->get_option( 'demographic_interest_tracking', 'wp-analytify-advanced' ) ) {
-							echo "ga('require', 'displayfeatures');";
-						}
+			 global $current_user;
 
-						if ( $this->settings->get_option( 'custom_js_code', 'wp-analytify-advanced' ) ) {
-							echo $this->settings->get_option( 'custom_js_code', 'wp-analytify-advanced' );
-						}
+			 $roles = $current_user->roles;
 
-						// Add enhanced eccomerce extension
-						do_action( 'ga_ecommerce_js' );
+			 if ( isset( $roles[0] ) and in_array( $roles[0], $this->settings->get_option( 'exclude_users_tracking', 'wp-analytify-profile', array() ) ) ) {
 
-						echo "ga('send', 'pageview');";
+				 echo '<!-- This user is disabled from tracking by Analytify !-->';
+			 } else {
 
-						?>
-					</script>
+				 $ga_code = $this->output_ga_code( $UA_CODE );
+				 echo apply_filters( 'analytify_ga_script', $ga_code );
+			 }
+		 }
 
-					<?php
 
-					echo sprintf( esc_html__( '%2$s This code is added by WP Analytify (%1$s) %3$s', 'wp-analytify' ), ANALYTIFY_VERSION, '<!--', '!-->' );
-					$ga_code = ob_get_contents();
-					ob_end_clean();
+		 public function output_ga_code( $UA_CODE ) {
+			 ob_start();
+			 echo sprintf( esc_html__( '%2$s This code is added by WP Analytify (%1$s) %4$s %3$s', 'wp-analytify' ), ANALYTIFY_VERSION, '<!--', '!-->', 'https://analytify.io/downloads/analytify-wordpress-plugin/' );
+				 ?>
+				 <script>
+				 (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+					 (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+					 m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+				 })
 
-					echo apply_filters( 'analytify_ga_script', $ga_code );
-				}
-			}
-		}
+				 (window,document,'script','//www.google-analytics.com/analytics.js','ga');
+				 <?php
+				 if ( 'on' === $this->settings->get_option( 'linker_cross_domain_tracking', 'wp-analytify-advanced' ) ) {
+					 echo "	ga('create', '{$UA_CODE}', 'auto', {'allowLinker': true});";
+					 echo "ga('require', 'linker');";
+				 } else {
+					 echo "	ga('create', '{$UA_CODE}', 'auto');";
+				 }
 
+				 if ( 'on' === $this->settings->get_option( 'anonymize_ip', 'wp-analytify-advanced' ) ) {
+					 echo "ga('set', 'anonymizeIp', true);";
+				 }
+
+				 if ( 'on' === $this->settings->get_option( 'force_ssl', 'wp-analytify-advanced' ) ) {
+					 echo "ga('set', 'forceSSL', true);";
+				 }
+
+				 if ( 'on' === $this->settings->get_option( 'track_user_id', 'wp-analytify-advanced' ) && is_user_logged_in() ) {
+					 echo "ga('set', 'userId', " . esc_html( get_current_user_id() ) . ');';
+				 }
+
+				 if ( 'on' === $this->settings->get_option( 'demographic_interest_tracking', 'wp-analytify-advanced' ) ) {
+					 echo "ga('require', 'displayfeatures');";
+				 }
+
+				 if ( $this->settings->get_option( 'custom_js_code', 'wp-analytify-advanced' ) ) {
+					 echo $this->settings->get_option( 'custom_js_code', 'wp-analytify-advanced' );
+				 }
+
+				 // Add enhanced eccomerce extension
+				 do_action( 'ga_ecommerce_js' );
+
+				 echo "ga('send', 'pageview');";
+
+				 ?>
+				 </script>
+
+				 <?php
+
+				 echo sprintf( esc_html__( '%2$s This code is added by WP Analytify (%1$s) %3$s', 'wp-analytify' ), ANALYTIFY_VERSION, '<!--', '!-->' );
+				 $ga_code = ob_get_contents();
+				 ob_end_clean();
+				 return $ga_code;
+			 }
 
 		/**
 		 * Add a link to the settings page to the plugins list
@@ -494,6 +553,12 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 
 				$settings_link = sprintf( esc_html__( '%1$s Settings %2$s | ', 'wp-analytify'), '<a href="' . admin_url( 'admin.php?page=analytify-settings' ) . '">', '</a>' );
 
+				$settings_link .= sprintf( esc_html__( '%1$s Support %2$s | ', 'wp-analytify'), '<a target="blank" href="https://wordpress.org/support/plugin/wp-analytify">', '</a>' );
+
+				if ( ! class_exists( 'WP_Analytify_Pro' ) ) {
+					$settings_link .= sprintf( esc_html__( '%1$s Get Analytify Pro %2$s |', 'wp-analytify' ),  '<a  href="https://analytify.io/pricing/?utm_source=analytify-lite&utm_medium=plugin-action-link&utm_campaign=pro-upgrade" target="_blank" style="color:#3db634;">', '</a>' );
+				}
+
 				if( 'yes' == get_option( '_analytify_optin' ) ){
 					$settings_link .= sprintf( esc_html__( '%1$s Opt Out %2$s | ', 'wp-analytify'), '<a class="opt-out" href="' . admin_url( 'admin.php?page=analytify-settings' ) . '">', '</a>' );
 				} else {
@@ -501,15 +566,11 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 				}
 
 
-				$settings_link .= sprintf( esc_html__( '%1$s Dashboard %2$s | ', 'wp-analytify'), '<a href="' . admin_url( 'admin.php?page=analytify-dashboard' ) . '">', '</a>' );
+				$settings_link .= sprintf( esc_html__( '%1$s Dashboard %2$s ', 'wp-analytify'), '<a href="' . admin_url( 'admin.php?page=analytify-dashboard' ) . '">', '</a>' );
 
-				$settings_link .= sprintf( esc_html__( '%1$s Help %2$s  ', 'wp-analytify'), '<a href="' . admin_url( 'index.php?page=wp-analytify-getting-started' ) . '">', '</a>'  );
+				// $settings_link .= sprintf( esc_html__( '%1$s Help %2$s  ', 'wp-analytify'), '<a href="' . admin_url( 'index.php?page=wp-analytify-getting-started' ) . '">', '</a>'  );
 				array_unshift( $links, $settings_link );
 
-				if ( ! class_exists( 'WP_Analytify_Pro' ) ) {
-					$pro_link = sprintf( esc_html__( '%1$s Upgrade To Pro %2$s', 'wp-analytify' ),  '<a  href="https://analytify.io/pricing/?utm_source=analytify-lite&utm_medium=plugin-action-link&utm_campaign=pro-upgrade" target="_blank" style="color:#3db634;">', '</a>' );
-					array_push( $links, $pro_link );
-				}
 
 			}
 
@@ -530,8 +591,8 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 
 			$links = array(
 
-				sprintf( esc_html__( '%1$s Getting Started %2$s', 'wp-analytify' ), '<a href="' . admin_url( 'index.php?page=wp-analytify-getting-started' ) . '">', '</a>' ),
-				sprintf( esc_html__( '%1$s Add Ons %2$s', 'wp-analytify' ), '<a href="http://analytify.io/add-ons/">', '</a>' ),
+				sprintf( esc_html__( '%1$s Get FREE Help %2$s', 'wp-analytify' ), '<a target="blank" href="https://wordpress.org/support/plugin/wp-analytify">', '</a>' ),
+				sprintf( esc_html__( '%1$s Explore Add Ons %2$s', 'wp-analytify' ), '<a href="http://analytify.io/add-ons/?ref=27">', '</a>' ),
 				'<a href="https://wordpress.org/support/view/plugin-reviews/wp-analytify/" target="_blank"><span class="dashicons dashicons-thumbs-up"></span> ' . __( 'Vote!', 'wp-analytify' ) . '</a>'
 				);
 
@@ -558,11 +619,34 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 
 			if ( strpos( $screen->base, 'analytify-settings' ) !== false ) {
 
-				echo '<div class="wrap wpanalytify">';
+				$version = defined( 'ANALYTIFY_PRO_VERSION' ) ? ANALYTIFY_PRO_VERSION : ANALYTIFY_VERSION;
+
+				echo '<div class="wrap"><h2></h2></div>
+
+				<div class="wpanalytify"><div class="wpb_plugin_wraper">
+
+
+				<div class="wpb_plugin_header_wraper">
+				<div class="graph"></div>
+
+				<div class="wpb_plugin_header">
+
+				<div class="wpb_plugin_header_title"></div>
+
+				<div class="wpb_plugin_header_info">
+					<a href="https://analytify.io/changelog/" target="_blank" class="btn">Changelog - v'. $version .'</a>
+				</div>
+				<div class="wpb_plugin_header_logo">
+					<img src="'. plugins_url( 'assets/images/logo.svg', __FILE__ ) .'" alt="Analytify">
+				</div>
+				</div></div><div class="wpb_plugin_body_wraper"><div class="wpb_plugin_body">';
 					$this->settings->rendered_settings();
 					$this->settings->show_tabs();
+				echo '<div class="wpb_plugin_tabs_content">';
 					$this->settings->show_forms();
 				echo '</div>';
+
+				echo '</div></div></div>';
 				?>
 
 				<?php
@@ -595,7 +679,7 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 			wp_enqueue_style( 'admin-bar-style', plugins_url( 'assets/old/css/admin_bar_styles.css', __FILE__ ), false, ANALYTIFY_VERSION );
 
 			// for Settings only
-			if ( $page == 'analytify_page_analytify-settings' ) {
+			if ( $page == 'analytify_page_analytify-settings' || $page == 'analytify_page_analytify-campaigns' ) {
 				wp_enqueue_style( 'jquery_tooltip', '//code.jquery.com/ui/1.11.4/themes/smoothness/jquery-ui.css', false, ANALYTIFY_VERSION);
 			}
 
@@ -604,9 +688,13 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 				wp_enqueue_style( 'chosen', plugins_url( 'assets/old/css/chosen.min.css', __FILE__ ) );
 			}
 
-			wp_enqueue_style( 'wp-analytify-style', plugins_url( 'assets/old/css/wp-analytify-style.css', __FILE__ ), false, ANALYTIFY_VERSION );
-			wp_enqueue_style( 'wp-analytify-default-style', plugins_url( 'assets/default/css/styles.css', __FILE__ ), false, ANALYTIFY_VERSION);
 
+			if ( strpos( $page, 'analytify' ) !== false || $page == 'post.php' || $page == 'post-new.php' ||  $page == 'index.php' ) {
+				wp_enqueue_style( 'wp-analytify-style', plugins_url( 'assets/old/css/wp-analytify-style.css', __FILE__ ), false, ANALYTIFY_VERSION );
+				wp_enqueue_style( 'wp-analytify-default-style', plugins_url( 'assets/default/css/styles.css', __FILE__ ), false, ANALYTIFY_VERSION );
+			}
+
+			wp_enqueue_style( 'wp-analytify-utils-style', plugins_url( 'assets/default/css/utils.css', __FILE__ ), false, ANALYTIFY_VERSION );
 			// For WP Pointer
 			if ( get_option( 'show_tracking_pointer_1' ) != 1 ) { wp_enqueue_style( 'wp-pointer' ); }
 
@@ -617,7 +705,7 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 		 */
 		public function admin_scripts( $page ) {
 
-			wp_enqueue_script( 'wp-analytify-script-js', plugins_url( 'assets/old/js/wp-analytify.js', __FILE__ ), array( 'jquery-ui-datepicker', 'jquery' ), ANALYTIFY_VERSION );
+			wp_enqueue_script( 'wp-analytify-script-js', plugins_url( 'assets/old/js/wp-analytify.js', __FILE__ ), array( 'jquery' ), ANALYTIFY_VERSION );
 
 			global $post_type;
 
@@ -628,7 +716,45 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 				wp_enqueue_script( 'moment-js', 	plugins_url( 'assets/default/js/moment.min.js', __FILE__ ), false, ANALYTIFY_VERSION );
 
 				wp_enqueue_script( 'analytify-dashboard-js', plugins_url( 'assets/default/js/wp-analytify-dashboard.js', __FILE__ ), false, ANALYTIFY_VERSION );
-
+				wp_localize_script( 'analytify-dashboard-js', 'analytify_dashboard', array(
+						'i18n' => array(
+							'previousMonth' => __( 'Previous Month', 'wp-analytify' ),
+							'nextMonth'     => __( 'Next Month', 'wp-analytify' ),
+							'months'        => array(
+								__( 'January', 'wp-analytify' ),
+								__( 'February', 'wp-analytify' ),
+								__( 'March', 'wp-analytify' ),
+								__( 'April', 'wp-analytify' ),
+								__( 'May', 'wp-analytify' ),
+								__( 'June', 'wp-analytify' ),
+								__( 'July', 'wp-analytify' ),
+								__( 'August', 'wp-analytify' ),
+								__( 'September', 'wp-analytify' ),
+								__( 'October', 'wp-analytify' ),
+								__( 'November', 'wp-analytify' ),
+								__( 'December1', 'wp-analytify' ),
+							),
+							'weekdays'      => array(
+								__( 'Sunday', 'wp-analytify' ),
+								__( 'Monday', 'wp-analytify' ),
+								__( 'Tuesday', 'wp-analytify' ),
+								__( 'Wednesday', 'wp-analytify' ),
+								__( 'Thursday', 'wp-analytify' ),
+								__( 'Friday', 'wp-analytify' ),
+								__( 'Saturday', 'wp-analytify' ),
+							),
+							'weekdaysShort' => array(
+								__( 'Sun', 'wp-analytify' ),
+								__( 'Mon', 'wp-analytify' ),
+								__( 'Tue', 'wp-analytify' ),
+								__( 'Wed', 'wp-analytify' ),
+								__( 'Thu', 'wp-analytify' ),
+								__( 'Fri', 'wp-analytify' ),
+								__( 'Sat', 'wp-analytify' ),
+							),
+						),
+					)
+				);
 			}
 
 			// for dashboard only
@@ -676,6 +802,7 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 				'clear_log'                        => wp_create_nonce( 'clear-log' ),
 				'fetch_log'                        => wp_create_nonce( 'fetch-log' ),
 				'reactivate_license'               => wp_create_nonce( 'reactivate-license' ),
+				'single_post_stats'								 => wp_create_nonce( 'analytify-get-single-stats' )
 			) );
 
 			$data = apply_filters( 'wpanalytify_data', array(
@@ -826,9 +953,9 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 
 			try {
 
-				if ( get_option( 'analytify_profile_exception' ) ) {
+				if ( $GLOBALS['WP_ANALYTIFY']->get_exception() ) {
 
-					WPANALYTIFY_Utils::handle_exceptions( get_option( 'analytify_profile_exception' ) );
+					WPANALYTIFY_Utils::handle_exceptions( $GLOBALS['WP_ANALYTIFY']->get_exception() );
 				} else if ( get_option( 'pa_google_token' ) != '' ) {
 					$profiles = $this->service->management_accountSummaries->listManagementAccountSummaries();
 					return $profiles;
@@ -836,8 +963,13 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 					echo '<br /><div class="notice notice-warning"><p>' . esc_html__( 'Notice: You must authenticate to access your web profiles.', 'wp-analytify' ) . '</p></div>';
 				}
 			} catch (Exception $e) {
+
+				$logger = analytify_get_logger();
+				$logger->warning( $e->getMessage(), array( 'source' => 'analytify_profile_summary' ) );
+
 				// Show admin notice if some exception occurs.
 				WPANALYTIFY_Utils::handle_exceptions( $e->getErrors() );
+				$GLOBALS['WP_ANALYTIFY']->set_exception( $e->getErrors() );
 				update_option( 'analytify_profile_exception', $e->getErrors() );
 			}
 
@@ -888,6 +1020,8 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 		 */
 		public function get_ajax_single_admin_analytics() {
 
+			check_ajax_referer( 'analytify-get-single-stats', 'nonce' );
+
 			$start_date = '';
 			$end_date   = '';
 			$post_id    = 0 ;
@@ -915,7 +1049,8 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 				$u_post = '/'; // $url_post['path'];
 			} else {
 				// decode the url for the filtration.
-				$u_post = parse_url( urldecode( get_permalink( $post_id ) ) );
+				$link = apply_filters( 'analytify_sinlge_stats_permalink', get_permalink( $post_id ), $post_id );
+				$u_post = parse_url( urldecode( $link ) );
 			}
 
 			if ( 'localhost' == $u_post['host'] ) {
@@ -949,49 +1084,34 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 			}
 
 			$show_settings = array();
-			$show_settings = $this->settings->get_option( 'show_panels_back_end','wp-analytify-admin' );
+			$show_settings = $this->settings->get_option( 'show_panels_back_end','wp-analytify-admin', array( 'show-overall-dashboard' ) );
 
 			// Stop here, if user has disable backend analytics i.e OFF.
 			if ( 'on' === $this->settings->get_option( 'disable_back_end','wp-analytify-admin' ) and 0 === $ajax ) {
 				return;
 			}
 
-
-			 echo sprintf( esc_html__( '%1$s Displaying Analytics of this page from.%2$s to %3$s %4$s', 'wp-analytify' ), '<p>', date( 'jS F, Y', strtotime( $s_date ) ), date( 'jS F, Y', strtotime( $e_date ) ), '</p>') ;
+			echo sprintf( esc_html__( '%1$s Displaying Analytics of this page from %2$s to %3$s %4$s', 'wp-analytify' ), '<p>', date( 'jS F, Y', strtotime( $s_date ) ), date( 'jS F, Y', strtotime( $e_date ) ), '</p>') ;
 			echo '<div class="analytify_wraper analytify_single_post_page">';
-			if ( ! empty( $show_settings ) ) {
 
-				if ( is_array( $show_settings ) ) {
+			if ( is_array( $show_settings ) ) {
 
+				if ( in_array( 'show-overall-dashboard', $show_settings ) ) {
 
+					// set demension if amp addon is installed.
+					$_general_stats_filter = defined( 'ANALYTIFY_AMP_VERSION' ) ? 'ga:pagePath' : false;
+					$stats = $this->pa_get_analytics( 'ga:sessions,ga:users,ga:pageviews,ga:avgSessionDuration,ga:bounceRate,ga:percentNewSessions,ga:newUsers,ga:avgTimeOnPage',$s_date, $e_date, $_general_stats_filter, false, $filter, false, 'analytify-single-general-stats' );
 
-					if ( in_array( 'show-overall-dashboard', $show_settings ) ) {
+					if ( isset( $stats->totalsForAllResults ) ) {
 
-						$stats = $this->pa_get_analytics( 'ga:sessions,ga:users,ga:pageviews,ga:avgSessionDuration,ga:bounceRate,ga:percentNewSessions,ga:newUsers,ga:avgTimeOnPage',$s_date, $e_date, false, false, $filter );
-
-						if ( isset( $stats->totalsForAllResults ) ) {
-
-							include_once ANALYTIFY_ROOT_PATH . '/views/default/admin/single-general-stats.php';
-							wpa_include_single_general( $this, $stats );
-						}
+						include_once ANALYTIFY_ROOT_PATH . '/views/default/admin/single-general-stats.php';
+						wpa_include_single_general( $this, $stats );
 					}
 				}
-
-				if ( has_action( 'wp_analytify_stats_under_post' ) ) {
-					do_action( 'wp_analytify_stats_under_post' , $show_settings ,$s_date, $e_date , $filter );
-				}
-
-
-
-			} else {
-
-				$stats = $this->pa_get_analytics( 'ga:sessions,ga:users,ga:pageviews,ga:avgSessionDuration,ga:bounceRate,ga:pageviewsPerSession,ga:percentNewSessions,ga:newUsers',$s_date, $e_date, false, false, $filter );
-
-				if ( isset( $stats->totalsForAllResults ) ) {
-					include_once ANALYTIFY_ROOT_PATH . '/views/default/admin/single-general-stats.php';
-					wpa_include_single_general( $this, $stats );
-				}
 			}
+
+			do_action( 'wp_analytify_stats_under_post' , $show_settings ,$s_date, $e_date , $filter );
+
 			echo '</div>';
 		}
 
@@ -1104,24 +1224,28 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 		 */
 		function analytify_admin_notice() {
 
+			if ( get_option( 'analytify_profile_exception' ) ) {
+				return;
+			}
+
 			$profile_id     = get_option( 'pt_webprofile' );
 			$acces_token    = get_option( 'post_analytics_token' );
 
 			if ( current_user_can( 'install_plugins' ) ) {
 
-				global $current_user ;
-				$user_id = $current_user->ID;
+				//global $current_user ;
+				//$user_id = $current_user->ID;
 				/* Check that the user hasn't already clicked to ignore the message */
-				if ( ! get_user_meta($user_id, 'analytify_2_1_6_ignore') ) {
-				echo '<div class="updated"><p>';
-				printf(__('Thanks for updating <strong>Analytify</strong>! <a href="https://analytify.io/go/analytify-review" target="_blank" rel="noopener">Read</a> how thousands of user loving Analytify and sharing their story! <a href="https://analytify.io/go/analytify-review" target="_blank" rel="noopener"><strong>Click here</strong></a>.
-					<a href="%1$s">[Hide Notice]</a>'),  admin_url( 'admin.php?page=analytify-dashboard&analytify_2_1_6_ignore=0' ));
-       			 echo "</p></div>";
-				 }
+				// if ( ! get_user_meta($user_id, 'analytify_2_1_22_ignore') ) {
+				// echo '<div class="updated"><p>';
+				// printf(__('Thanks for updating <strong>Analytify</strong>! <a href="https://analytify.io/go/analytify-review" target="_blank" rel="noopener">Read</a> how thousands of user loving Analytify and sharing their story! <a href="https://analytify.io/go/analytify-review" target="_blank" rel="noopener"><strong>Click here</strong></a>.
+				// 	<a href="%1$s">[Hide Notice]</a>'), add_query_arg( array( 'analytify_2_1_22_ignore' => '0' ) )  );
+    //    			 echo "</p></div>";
+				//  }
 			}
 
 			/* Show notices */
-	        if ( ! isset( $acces_token ) || empty( $acces_token ) || ! get_option( 'pa_google_token' ) ) {
+			if ( ! isset( $acces_token ) || empty( $acces_token ) || ! get_option( 'pa_google_token' ) ) {
 
 				echo sprintf( esc_html__( '%1$s %2$s %3$sNotice:%4$s %5$sConnect%6$s %4$s Analytify with your Google account. %7$s %8$s', 'wp-analytify' ), '<div class="error notice is-dismissible">', '<p>', '<b>', '</b>', '<b><a style="text-decoration:none" href=' . esc_url( menu_page_url( 'analytify-settings', false ) ) . '>', '</a>','</p>', '</div>' );
 			} else {
@@ -1146,12 +1270,12 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 			$user_id = $current_user->ID;
 			/* If user clicks to ignore the notice, add that to their user meta */
 			if ( isset( $_GET['analytify_nag_ignore'] ) && '0' === $_GET['analytify_nag_ignore'] ) { // Input var okay.
-				add_user_meta( $user_id, 'analytify_2_1_6_ignore', 'true', true );
+				add_user_meta( $user_id, 'analytify_2_1_22_ignore', 'true', true );
 			}
 
 			/* If user clicks to ignore the 2.1.5 notice, add that to their user meta */
-			if ( isset( $_GET['analytify_2_1_6_ignore'] ) && '0' === $_GET['analytify_2_1_6_ignore'] ) { // Input var okay.
-				add_user_meta( $user_id, 'analytify_2_1_6_ignore', 'true', true );
+			if ( isset( $_GET['analytify_2_1_22_ignore'] ) && '0' === $_GET['analytify_2_1_22_ignore'] ) { // Input var okay.
+				add_user_meta( $user_id, 'analytify_2_1_22_ignore', 'true', true );
 			}
 
 
@@ -1225,7 +1349,7 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 				return;
 			}
 
-			add_site_option( 'wp_analytify_review_dismiss', 'yes' );
+			add_site_option( 'wp_analytify_review_dismiss_2_1_22', 'yes' );
 		}
 
 		/**
@@ -1240,7 +1364,7 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 			$this->review_prending();
 
 			$activation_time 	= get_site_option( 'wp_analytify_active_time' );
-			$review_dismissal	= get_site_option( 'wp_analytify_review_dismiss' );
+			$review_dismissal	= get_site_option( 'wp_analytify_review_dismiss_2_1_22' );
 
 			if ( 'yes' == $review_dismissal ) {
 				return;
@@ -1313,6 +1437,74 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 		<?php
 		}
 
+
+		/**
+		 * Show Buy Pro Notice after 7 days of activation.
+		 *
+		 * @since 2.1.23
+		 */
+		function analytify_buy_pro_notice() {
+
+			$this->buy_pro_notice_dismissal();
+
+			$activation_time 	= get_site_option( 'wp_analytify_buy_pro_active_time' );
+			$review_dismissal	= get_site_option( 'wp_analytify_buy_pro_notice' );
+
+			if ( 'yes' == $review_dismissal ) {
+				return;
+			}
+
+
+			if ( ! $activation_time ) {
+
+				$activation_time = time();
+				add_site_option( 'wp_analytify_buy_pro_active_time', $activation_time );
+			}
+
+			// 604800 = 7 Days in seconds.
+			if ( time() - $activation_time > 604800 ) {
+				add_action( 'admin_notices' , array( $this, 'analytify_buy_pro_message' ) );
+			}
+
+		}
+
+		/**
+		 * Dismiss Buy Pro Notice.
+		 *
+		 * @since 2.1.23
+		 */
+		function buy_pro_notice_dismissal() {
+
+			if ( ! is_admin() ||
+			! current_user_can( 'manage_options' ) ||
+			! isset( $_GET['_wpnonce'] ) ||
+			! wp_verify_nonce( sanitize_key( wp_unslash( $_GET['_wpnonce'] ) ), 'wp_analytify_buy_pro_notice' ) ||
+			! isset( $_GET['wp_analytify_buy_pro_notice_dismiss'] ) ) {
+
+				return;
+			}
+
+			add_site_option( 'wp_analytify_buy_pro_notice', 'yes' );
+
+		}
+
+		/**
+		 * Show Buy Pro Notice.
+		 *
+		 * @since 2.1.23
+		 */
+		function analytify_buy_pro_message() {
+
+			$scheme      = (parse_url( $_SERVER['REQUEST_URI'], PHP_URL_QUERY )) ? '&' : '?';
+			$url         = $_SERVER['REQUEST_URI'] . $scheme . 'wp_analytify_buy_pro_notice_dismiss=yes';
+			$dismiss_url = wp_nonce_url( $url, 'wp_analytify_buy_pro_notice' );
+
+			$class   = 'wp-analytify-success';
+
+			$message =	sprintf( 'Analytify now powering %1$s30,000+%2$s websites. Use the coupon code %1$sGOPRO10%2$s to redeem a %1$s10%% %2$s discount on Pro. %3$sApply Coupon%4$s %5$s I\'m good with free.%6$s', '<strong>', '</strong>', '<a href="https://analytify.io/pricing/?discount=gopro10" target="_blank" class="wp-analytify-notice-link"><span class="dashicons dashicons-smiley"></span> ', '</a>', '<a href="'. $dismiss_url .'" class="wp-analytify-notice-link"><span class="dashicons dashicons-dismiss"></span>', '</a>' );
+			analytify_notice( $message, $class );
+
+		}
 
 		/**
 		 * Include required ajax files.
@@ -1424,6 +1616,93 @@ if ( ! class_exists( 'WP_Analytify' ) ) {
 
 		}
 
+		/**
+		 * Trigger logging cleanup using the logging class.
+		 *
+		 * @since 2.1.23
+		 */
+
+		function analytify_cleanup_logs() {
+			$logger = analytify_get_logger();
+
+			if ( is_callable( array( $logger, 'clear_expired_logs' ) ) ) {
+				$logger->clear_expired_logs();
+			}
+		}
+
+		/**
+		 * Update profiles_list_summary option when hide profile is set.
+		 * @param  array $old_value
+		 * @param  array $new_value
+		 *
+		 * @since 2.1.4
+		 */
+		function update_profiles_list_summary( $old_value, $new_value ) {
+
+			if ( isset( $new_value['hide_profiles_list'] ) && $new_value['hide_profiles_list'] == 'on' && ( $new_value['hide_profiles_list'] != $old_value['hide_profiles_list']  ) && isset( $new_value['profile_for_dashboard'] ) ) {
+
+				$accounts = get_option( 'profiles_list_summary' );
+				update_option( 'profiles_list_summary_backup', $accounts, no );
+
+				$new_properties = array();
+				foreach ( $accounts->getItems() as $account ) {
+					foreach ( $account->getWebProperties() as  $property ) {
+						foreach ( $property->getProfiles() as $profile ) {
+							// Get Property ID i.e UA Code
+							if ( $profile->getId() === $new_value['profile_for_dashboard'] ) {
+								$new_properties[$account->getId()] = $property;
+							}
+							if ( $profile->getId() === $new_value['profile_for_posts'] ) {
+								$new_properties[$account->getId()] = $property;
+							}
+						}
+					}
+
+				}
+				update_option( 'profiles_list_summary', $new_properties );
+			}
+		}
+
+
+		/**
+		 * Remove the unnecessary data from profile summary list.
+		 *
+		 * @since 2.2.5
+		 */
+		function update_profile_list_summary_on_update() {
+			if ( version_compare( ANALYTIFY_VERSION ,  get_option( 'WP_ANALYTIFY_PLUGIN_VERSION' ) , '>' ) ) {
+				$option = get_option( 'wp-analytify-profile' );
+				if ( isset( $option['hide_profiles_list'] ) && $option['hide_profiles_list'] == 'on' ) {
+					$accounts = get_option( 'profiles_list_summary' );
+
+					// Means that its run already.
+					if ( is_array( $accounts ) ) {
+						return;
+					}
+			 		update_option( 'profiles_list_summary_backup', $accounts, 'no' );
+
+					$new_value['profile_for_dashboard'] = $option['profile_for_dashboard'];
+					$new_value['profile_for_posts'] = $option['profile_for_posts'];
+
+					$new_properties = array();
+					foreach ( $accounts->getItems() as $account ) {
+						foreach ( $account->getWebProperties() as  $property ) {
+							foreach ( $property->getProfiles() as $profile ) {
+								// Get Property ID i.e UA Code
+								if ( $profile->getId() === $new_value['profile_for_dashboard'] ) {
+									$new_properties[$account->getId()] = $property;
+								}
+								if ( $profile->getId() === $new_value['profile_for_posts'] ) {
+									$new_properties[$account->getId()] = $property;
+								}
+							}
+						}
+					}
+					update_option( 'profiles_list_summary', $new_properties );
+				}
+			}
+		}
+
 	}
 
 } // End if class_exists check
@@ -1448,6 +1727,11 @@ function wp_analytify_activate() {
 	// If user has opt-in send activate notification.
 	if ( get_site_option( '_analytify_optin' ) == 'yes' ) {
 		analytify_send_data( array( 'action' => 'Activate' ) );
+	}
+
+	// update version.
+	if ( ! get_option( 'pa_google_token' ) ) {
+		update_option( 'wpa_current_version', '2.1.2' );
 	}
 
 	// Return if settings already added in DB.
@@ -1538,6 +1822,7 @@ function wp_analytify_uninstall() {
 	delete_option( 'WP_ANALYTIFY_NEW_LOGIN' );
 	delete_option( '_analytify_optin' );
 	delete_option( 'wp_analytify_active_time' );
+	delete_option( 'wp_analytify_buy_pro_active_time' );
 	delete_option( 'WP_ANALYTIFY_PLUGIN_VERSION' );
 	delete_option( 'analytify_free_upgrade_routine' );
 	delete_option( 'wp-analytify-dashboard' );

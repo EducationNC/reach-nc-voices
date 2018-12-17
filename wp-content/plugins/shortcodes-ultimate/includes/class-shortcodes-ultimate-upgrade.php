@@ -76,6 +76,18 @@ final class Shortcodes_Ultimate_Upgrade {
 			$this->upgrade_to_5_0_0();
 		}
 
+		if ( $this->is_previous_version_less_than( '5.0.7' ) ) {
+			$this->upgrade_to_5_0_7();
+		}
+
+		if ( $this->is_previous_version_less_than( '5.1.1' ) ) {
+			$this->upgrade_to_5_1_1();
+		}
+
+		if ( $this->is_previous_version_less_than( '5.2.0' ) ) {
+			$this->upgrade_to_5_2_0();
+		}
+
 		$this->save_current_version();
 
 	}
@@ -163,6 +175,83 @@ final class Shortcodes_Ultimate_Upgrade {
 
 			update_option( 'su_option_custom-css', $custom_css, true );
 
+		}
+
+	}
+
+	/**
+	 * Upgrade the plugin to version 5.0.7
+	 *
+	 * 1. Rename `su_generator_access` option to `su_option_generator_access`.
+	 *
+	 * @since   5.0.0
+	 * @access  private
+	 */
+	private function upgrade_to_5_0_7() {
+
+		/**
+		 * 1. Rename `su_generator_access` option to `su_option_generator_access`.
+		 */
+		$su_generator_access_value = get_option( 'su_generator_access' );
+
+		if ( $su_generator_access_value ) {
+
+			delete_option( 'su_generator_access' );
+
+			add_option( 'su_option_generator_access', $su_generator_access_value, '', false );
+
+		}
+
+	}
+
+	/**
+	 * Upgrade the plugin to version 5.1.1
+	 *
+	 * 1. Add `su_option_supported_blocks` option.
+	 *
+	 * @since   5.1.1
+	 * @access  private
+	 */
+	private function upgrade_to_5_1_1() {
+
+		/**
+		 * 1. Add `su_option_supported_blocks` option.
+		 */
+		$supported_blocks = 'su_option_supported_blocks';
+
+		if ( false === get_option( $supported_blocks ) ) {
+			add_option( $supported_blocks, array_keys( su_get_config( 'supported-blocks' ) ) );
+		}
+
+	}
+
+	/**
+	 * Upgrade the plugin to version 5.2.0
+	 *
+	 * 1. Add `su_option_generator_access` option.
+	 * 2. Add `su_option_enable_shortcodes_in` option.
+	 *
+	 * @since   5.2.0
+	 * @access  private
+	 */
+	private function upgrade_to_5_2_0() {
+
+		/**
+		 * 1. Add `su_option_generator_access` option.
+		 */
+		$generator_access = 'su_option_generator_access';
+
+		if ( false === get_option( $generator_access ) ) {
+			add_option( $generator_access, 'manage_options' );
+		}
+
+		/**
+		 * 2. Add `su_option_enable_shortcodes_in` option.
+		 */
+		$enable_shortcodes_in = 'su_option_enable_shortcodes_in';
+
+		if ( false === get_option( $enable_shortcodes_in ) ) {
+			add_option( $enable_shortcodes_in, array( 'category_description', 'widget_text' ) );
 		}
 
 	}

@@ -119,7 +119,7 @@ $(document).click(function (e){
 
     $('table.wp_analytify_paginated').each(function() {
         var currentPage = 0;
-        var numPerPage = 5;
+        var numPerPage = $(this).data('product-per-page') ? $(this).data('product-per-page') : 5;
         var $table = $(this);
         var $table_pagination = $(this).parent().next();
         $table.bind('repaginate', function() {
@@ -252,6 +252,7 @@ $(document).click(function (e){
             field: document.getElementById('analytify_start'),
             format: 'MMM DD, YYYY',
             maxDate: new Date(today_date),
+            i18n : analytify_dashboard.i18n,
             onSelect: function() {
                 startDate = this.getDate();
                 updateStartDate();
@@ -263,6 +264,7 @@ $(document).click(function (e){
             position: 'bottom right',
             maxDate: new Date(today_date),
             format: 'MMM DD, YYYY',
+            i18n : analytify_dashboard.i18n,
 
             onSelect: function() {
                 endDate = this.getDate();

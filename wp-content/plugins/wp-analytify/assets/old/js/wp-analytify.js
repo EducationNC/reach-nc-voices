@@ -53,27 +53,6 @@
 
 	 $('.remove-stats').remove();
 
-	 $("#start_date").datepicker({
-	 	dateFormat : 'yy-mm-dd',
-	 	changeMonth : true,
-	 	changeYear : true,
-	 	beforeShow: function() {
-	 		$('#ui-datepicker-div').addClass('mycalander');
-	 	},
-	 	yearRange: '-9y:c+nn'
-	 });
-
-	 $("#end_date").datepicker({
-	 	dateFormat : 'yy-mm-dd',
-	 	changeMonth : true,
-	 	changeYear : true,
-	 	beforeShow: function() {
-	 		$('#ui-datepicker-div').addClass('mycalander');
-	 	},
-	 	yearRange: '-9y:c+nn'
-	 }).datepicker('setDate',new Date());
-
-
 	 $("#view_analytics").click(function (e) {
 
     e.preventDefault();
@@ -89,7 +68,7 @@
 
 	 		type: 'POST',
 	 		url: ajaxurl,
-	 		data: 'action=get_ajax_single_admin_analytics&start_date=' + start_date + "&end_date=" + end_date+"&post_id="+urlpost,
+	 		data: 'action=get_ajax_single_admin_analytics&start_date=' + start_date + "&end_date=" + end_date+"&post_id="+urlpost + "&nonce=" + wpanalytify_data.nonces.single_post_stats,
 
 	 		beforeSend: function () {
         $(".show-hide").html('');

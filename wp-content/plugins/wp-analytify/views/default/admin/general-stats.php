@@ -6,21 +6,14 @@ if ( ! defined( 'ABSPATH' ) ) { exit; }
  * View of General Statistics
  */
 
- // add_filter( 'wpanalytify_data',  function ($data){
- // 	$data1 = array(
- // 		'New' => 123,
- // 		'Returning' => 321,
- // 	);
- // 	return array_merge($data, $data1);
- // });
 
 function fetch_general_stats( $current, $current_stats, $device_category_stats, $compare_stats , $date_different, $new_returning_stats ) {
 
 
 	$results = $current_stats->totalsForAllResults;
 
-	$new_users 				= $new_returning_stats->rows[0][1];
-	$returning_users 	= $new_returning_stats->rows[1][1];
+	$new_users 				= isset( $new_returning_stats->rows[0][1] ) ? $new_returning_stats->rows[0][1] : 0;
+	$returning_users 	= isset( $new_returning_stats->rows[1][1] ) ? $new_returning_stats->rows[1][1] : 0;
 
 	$compare_results = $compare_stats->totalsForAllResults;
 
@@ -144,10 +137,10 @@ function fetch_general_stats( $current, $current_stats, $device_category_stats, 
 									]
 							};
 
-
+						var error_message = '<?php echo __( 'No Activity Found', 'wp-analytify' ) ?>';
 						if ( <?php echo $new_users; ?> == 0 ) {
 
-							$("#analytify_new_returing_graph").html('<div class="analytify_general_stats_value">0</div><p>No Activity Found</p>');
+							$("#analytify_new_returing_graph").html('<div class="analytify_general_stats_value">0</div><p>'+ error_message +'</p>');
 
 						} else {
 
@@ -171,7 +164,7 @@ function fetch_general_stats( $current, $current_stats, $device_category_stats, 
 
 						if ( notJson (<?php echo $device_data ?>) ) {
 
-							$("#analytify_user_device_graph").html('<div class="analytify_general_stats_value">0</div><p>No Activity Found</p>');
+							$("#analytify_user_device_graph").html('<div class="analytify_general_stats_value">0</div><p>'+ error_message +'</p>');
 
 						} else {
 
@@ -266,6 +259,9 @@ function fetch_general_stats( $current, $current_stats, $device_category_stats, 
 
 function get_compare_stats( $results, $compare_results, $date_different, $name='' ) {
 
+	// if compare stats are zero.
+	if ( ! (int) $compare_results ) { return; }
+	// if current date stats.
 	if ( $date_different == 0 ) { return; }
 
 	$compare = number_format( ( ( $results - $compare_results ) / $compare_results ) * 100, 2 );

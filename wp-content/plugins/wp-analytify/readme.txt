@@ -1,10 +1,10 @@
 === Analytify - Google Analytics Dashboard Plugin for WordPress ===
-Contributors: hiddenpearls, Asif2BD
+Contributors: hiddenpearls, Asif2BD, desideveloper
 Donate link: http://paypal.me/Analytify
-Tags: google analytics, google analytics dashboard, WooCommerce analytics, WordPress Analytics, analytics, tracking, analytify, install analytics, e-commerce, track, track visitor, statistics, campaign tracking, analytics campaigns, best google analytics, enhanced ecommerce tracking, email analytics report, google analytics export,
+Tags: google analytics, google analytics dashboard, WooCommerce stats, WordPress Analytics, analytics, tracking, analytify, install analytics, e-commerce, track, track visitor, statistics, campaign tracking, analytics campaigns, best google analytics, enhanced ecommerce tracking, email analytics report, google analytics export,
 Requires at least: 3.6
-Tested up to: 4.9
-Stable tag: 2.1.19
+Tested up to: 5.0
+Stable tag: 2.2.6
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
 
@@ -88,6 +88,9 @@ Available in Following languages: <br />
 * Spanish 50%
 * Dutch 96%
 
+> It is highly recommended by Google Analytics Team to use your own Custom API keys. You need to create a Project in Google Console.
+Here is a short [Video guide](https://analytify.io/custom-api-keys-video) to get your own ClientID, Client Secret and Redirect URL. Add these API Keys in Advanced Tab before connecting Analytify with Google Analytics.
+
 == Installation ==
 
 This section describes how to install the Google Analytics Dashboard by Analytify plugin and get it working.
@@ -149,6 +152,69 @@ Not at all. Analytify uses Google Analytics Universal tracking JS code to track 
 
 
 == Changelog ==
+
+= 2.2.6 - 2018-12-11 =
+* Bug Fix: Admin notice style break.
+
+= 2.2.5 - 2018-12-10 =
+* New Feature: Introducing detailed stats on Google Analytics.
+* Bug Fix: Optimization, Profile Summary used more space in database.
+* Enhancement: Nonce implementation.
+* Enhancement: Code Refactor.
+* Enhancement: Fix translatable stings issue.
+* Enhancement: Restrict CSS only on Analytify pages.
+* Enhancement: New Social icons like Yelp added
+* Enhancement: Add default icons if specific icon is not available.
+* Enhancement: Calendar dates are translatable now.
+* Enhancement: Format Stats numbers.
+* Enhancement: csv export icon is available on hover each Stats section.
+* Compatibility: Compatible with WordPress 5.0.
+
+= 2.2.4 - 2018-11-22 =
+* Enhancement: Confliction with Elementor.
+
+= 2.2.3 - 2018-11-03 =
+* Enhancement: Update Pikaday library.
+* Enhancement: Error Handling.
+* Enhancement: Confliction with WooCommerce Pre Order.
+
+= 2.2.2 - 2018-11-02 =
+* Bug Fix: Fix style confliction.
+
+= 2.2.1 - 2018-11-01 =
+* Bug Fix: Fetch fresh stats when custom Google API keys are added.
+* Bug Fix: Fix style confliction.
+* Bug Fix: Contact Form 7 addon notice.
+* Bug Fix: Confliction with Woo Product Bundle
+* Bug Fix: Fix RTL design issue
+* Enhancement: Delete Exception when delete cache is On.
+* Enhancement: Code Refactor.
+
+= 2.2.0 - 2018-10-26 =
+* Enhancement: Better User Experience.
+* Enhancement: French language added.
+* Enhancement: Settings Text updated.
+* Enhancement: New Settings page design.
+* Enhancement: Better Cache handling.
+* Enhancement: Error Handling.
+* Enhancement: Add Error logs.
+* Enhancement: Code Refactor.
+* Bug Fix: Fix confliction with Music Club Theme.
+
+= 2.1.22 - 2018-10-03 =
+* New Feature: Add user optin shortcode for GDPR Compatibility `analytify_user_optin`.
+* Enhancement: Error Handling.
+* Bug Fix: Fix confliction with Bridge Theme.
+
+= 2.1.21 - 2018-09-20 =
+* Bug Fix: Fix ModSecurity issue when user use custom Google API Keys.
+* Bug Fix: Compare stats when no previous stats available.
+* Bug Fix: Fix conflict with Massive Cryptocurrency plugin.
+* Enhancement: Add Instagram icon in Analytics dashboard.
+
+= 2.1.20 - 2018-08-19 =
+* Bug Fix: WPMU Popup Pro CSS Conflict fixed.
+* Enhancement: Code improvement and changed Youtube Video URL for setting up Custom Google Analytics API Keys.
 
 = 2.1.19 - 2018-08-08 =
 * Enhancement: Update text for New sessions.
@@ -454,8 +520,8 @@ Not at all. Analytify uses Google Analytics Universal tracking JS code to track 
 
 == Upgrade Notice ==
 
-= 2.1.19 =
-* [Important Update] Upgrade immediately.
+= 2.2.6 =
+* [Important Enhancement Update] Upgrade immediately.
 
 
 == Notes ==

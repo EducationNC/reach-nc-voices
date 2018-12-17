@@ -21,6 +21,8 @@ function fetch_pages_stats( $current, $stats ) {
 
 			<?php
 
+			$url = 0;
+			$top_entrance = 0;
 			if ( isset( $stats['rows'] ) && $stats['rows'] > 0 ) :
 				$i            = 0;
 				$url          = $stats['rows'][0][1];
@@ -67,9 +69,9 @@ function fetch_pages_stats( $current, $stats ) {
 
 	$body = ob_get_clean();
 
-	echo json_encode(
+	return json_encode(
 		array(
-			'message' => sprintf( esc_html__( 'Did you know that %1$s people landed directly to your site at %2$s', 'wp-analytify' ), WPANALYTIFY_Utils::pretty_numbers( $top_entrance ), $url ),
+			'message' => sprintf( esc_html__( 'Did you know that %1$s people landed directly to your site at %2$s?', 'wp-analytify' ), WPANALYTIFY_Utils::pretty_numbers( $top_entrance ), $url ),
 			'body'    => $body,
 		)
 	);

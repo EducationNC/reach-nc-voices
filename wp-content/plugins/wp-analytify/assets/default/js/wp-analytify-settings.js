@@ -111,6 +111,14 @@ jQuery(document).ready(function ($) {
 		evt.preventDefault();
 	});
 
+	// move to authenticate tab.
+	$('.analytify_need_authenticate_first a').on('click', function(event) {
+		event.preventDefault();
+		$('.analytify_nav_tab_wrapper a').removeClass('nav-tab-active');
+		$('#wp-analytify-authentication-tab').addClass('nav-tab-active');
+		$('.group').hide();
+		$('#wp-analytify-authentication').fadeIn();
+	});
 
 	//Email Logo
 	$('.analytify_email_clear').on('click', function(event) {

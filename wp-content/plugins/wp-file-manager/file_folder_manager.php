@@ -4,7 +4,7 @@
   Plugin URI: https://wordpress.org/plugins/wp-file-manager
   Description: Manage your WP files.
   Author: mndpsingh287
-  Version: 2.8
+  Version: 3.7
   Author URI: https://profiles.wordpress.org/mndpsingh287
   License: GPLv2
 **/
@@ -29,6 +29,10 @@ if(!class_exists('mk_file_folder_manager')):
 			 */
 			 add_action( 'wp_ajax_mk_filemanager_verify_email', array(&$this, 'mk_filemanager_verify_email_callback'));
 			 add_action( 'wp_ajax_verify_filemanager_email', array(&$this, 'verify_filemanager_email_callback') );
+			 // php syntax
+			 add_action( 'wp_ajax_mk_check_filemanager_php_syntax', array(&$this, 'mk_check_filemanager_php_syntax_callback'));
+			 add_action( 'wp_ajax_nopriv_mk_check_filemanager_php_syntax', array(&$this, 'mk_check_filemanager_php_syntax_callback') );
+			 add_action('admin_init', array(&$this, 'remove_fm_temp_file'));
 
 		}
 		
@@ -184,10 +188,6 @@ if(!class_exists('mk_file_folder_manager')):
 			add_submenu_page( 'wp_file_manager', __( 'System Properties', 'wp-file-manager' ), __( 'System Properties', 'wp-file-manager' ), 'manage_options', 'wp_file_manager_properties', array(&$this, 'wp_file_manager_properties'));
 			/* Only for admin */
 			add_submenu_page( 'wp_file_manager', __( 'Shortcode - PRO', 'wp-file-manager' ), __( 'Shortcode - PRO', 'wp-file-manager' ), 'manage_options', 'wp_file_manager_shortcode_doc', array(&$this, 'wp_file_manager_shortcode_doc'));
-			/* Only for admin */
-			add_submenu_page( 'wp_file_manager', __( 'Extensions', 'wp-file-manager' ), __( 'Extensions', 'wp-file-manager' ), 'manage_options', 'wp_file_manager_extension', array(&$this, 'wp_file_manager_extension'));
-			/* Only for admin */
-			add_submenu_page( 'wp_file_manager', __( 'Contribute', 'wp-file-manager' ), __( 'Contribute', 'wp-file-manager' ), 'manage_options', 'wp_file_manager_contribute', array(&$this, 'wp_file_manager_contribute'));
 		}
 		/* Main Role */
 		public function ffm_settings_callback()
@@ -223,13 +223,6 @@ if(!class_exists('mk_file_folder_manager')):
 			 include('inc/system_properties.php');
 			endif;
 		}
-		/* Contribute */
-		public function wp_file_manager_contribute()
-		{
-			if(is_admin()):		  
-			 include('inc/contribute.php');
-			endif;
-		}
 		/*
 		 Root
 		*/
@@ -242,7 +235,7 @@ if(!class_exists('mk_file_folder_manager')):
 		/* Admin  Things */
 		public function ffm_admin_things()
 		{
-				$getPage = isset($_GET['page']) ? $_GET['page'] : '';
+				$getPage = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
 				$allowedPages = array(
 									  'wp_file_manager'
 									  );
@@ -253,22 +246,24 @@ if(!class_exists('mk_file_folder_manager')):
 						wp_enqueue_script( 'elfinder_min', plugins_url('lib/js/elfinder.full.js',  __FILE__ ));	
 						wp_enqueue_style( 'theme', plugins_url('lib/css/theme.css', __FILE__));
 						// Languages
-						if(isset($_GET['lang']) && !empty($_GET['lang'])){
-							 set_transient( 'wp_fm_lang', $_GET['lang'] ,  60 * 60 * 720 );
-							 if($_GET['lang'] != 'en') {
-								wp_enqueue_script( 'fm_lang', plugins_url('lib/js/i18n/elfinder.'.$_GET['lang'].'.js',  __FILE__ ));	
+						$lang = isset($_GET['lang']) && !empty($_GET['lang']) ? sanitize_text_field($_GET['lang']) : '';
+						if(!empty($lang)){
+							 set_transient( 'wp_fm_lang', $lang ,  60 * 60 * 720 );
+							 if($lang != 'en') {
+								wp_enqueue_script( 'fm_lang', plugins_url('lib/js/i18n/elfinder.'.$lang.'.js',  __FILE__ ));	
 						        } 
 						} else if(false !== ( $wp_fm_lang = get_transient( 'wp_fm_lang' ) )) {
 							  if($wp_fm_lang != 'en') {
 							    wp_enqueue_script( 'fm_lang', plugins_url('lib/js/i18n/elfinder.'.$wp_fm_lang.'.js',  __FILE__ ));	 
 							  }
 						}
+						$theme = isset($_GET['theme']) && !empty($_GET['theme']) ? sanitize_text_field($_GET['theme']) : '';
 						// New Theme
-						if(isset($_GET['theme']) && !empty($_GET['theme'])){
+						if(!empty($theme)){
 							 delete_transient('wp_fm_theme');
-							 set_transient( 'wp_fm_theme', $_GET['theme'] ,  60 * 60 * 720 );
-							 if($_GET['theme'] != 'nwp_file_manager-color') {
-								wp_enqueue_style( 'theme-latest', plugins_url('lib/themes/'.$_GET['theme'].'/css/theme.css',  __FILE__ ));	
+							 set_transient( 'wp_fm_theme', $theme ,  60 * 60 * 720 );
+							 if($theme != 'default') {
+								wp_enqueue_style( 'theme-latest', plugins_url('lib/themes/'.$theme.'/css/theme.css',  __FILE__ ));	
 						       } 
 						} else if(false !== ( $wp_fm_theme = get_transient( 'wp_fm_theme' ) )) {
 							if($wp_fm_theme != 'default') {
@@ -334,7 +329,7 @@ if(!class_exists('mk_file_folder_manager')):
 							'uploadOrder'   => array('deny', 'allow'),      // allowed Mimetype `image` and `text/plain` only
 							'accessControl' => 'access',                     // disable and hide dot starting files (OPTIONAL)
 							'acceptedName' => 'validName',
-							'disabled' => array('help'),
+							'disabled' => array('help','preference'),
 							'attributes' => $mk_restrictions
 						)
 					)
@@ -400,6 +395,13 @@ if(!class_exists('mk_file_folder_manager')):
 		   echo "<link rel='stylesheet' href='".plugins_url('css/fm_script.css', __FILE__)."' type='text/css' media='all' />
 		   ";
 	   }
+	   /*
+	    custom_css
+	   */
+	    public function custom_css() {
+		   echo "<link rel='stylesheet' href='".plugins_url('css/fm_custom.css', __FILE__)."' type='text/css' media='all' />
+		   ";
+	   }
 	  /* Languages */
 	  public function fm_languages() {
 		  $langs =  array('English'=>'en', 
@@ -446,30 +448,54 @@ if(!class_exists('mk_file_folder_manager')):
 		 $theme_files = array_diff(scandir($dir), array('..', '.'));
 		 return $theme_files;
 	  }
-	    	/**
-	 * Size Conversions
-	 *
-	 * @param  unknown    $v
-	 * @return int|string
-	 */
-	static function let_to_num( $v ) {
-		$l   = substr( $v, -1 );
-		$ret = substr( $v, 0, -1 );
-
-		switch ( strtoupper( $l ) ) {
-			case 'P': // fall-through
-			case 'T': // fall-through
-			case 'G': // fall-through
-			case 'M': // fall-through
-			case 'K': // fall-through
-				$ret *= 1024;
-				break;
-			default:
-				break;
-		}
-
-		return $ret;
+	  /* Success Message */
+	  public function success($msg) {
+		  _e( '<div class="updated settings-error notice is-dismissible" id="setting-error-settings_updated"> 
+<p><strong>'.$msg.'</strong></p><button class="notice-dismiss" type="button"><span class="screen-reader-text">Dismiss this notice.</span></button></div>', 'te-editor');	
 	}
+	  /* Error Message */
+	  public function error($msg) {
+		  _e( '<div class="error settings-error notice is-dismissible" id="setting-error-settings_updated"> 
+<p><strong>'.$msg.'</strong></p><button class="notice-dismiss" type="button"><span class="screen-reader-text">Dismiss this notice.</span></button></div>', 'te-editor');	
+	}
+	  /* Redirect */
+	  public function redirect($url) {
+		echo '<script>';
+		 echo 'window.location.href="'.$url.'"';
+		echo '</script>' ;
+	  }
+	  /* Remove Fm Temp File */
+	  public function remove_fm_temp_file() {
+		 $upload_dir   = wp_upload_dir(); 
+		 $fm_temp = $upload_dir['basedir'].'/fm_temp.php'; 
+		 if(file_exists($fm_temp)) {
+			unlink($fm_temp); 
+		 }
+	  }
+	  /* Check php Syntax Errors */ 
+	  public function mk_check_filemanager_php_syntax_callback() {
+		 $filename = isset($_POST['filename']) ? sanitize_file_name($_POST['filename']) : '';
+		 $fileMime = isset($_POST['filemime']) ? sanitize_mime_type($_POST['filemime']) : '';
+		 $code = stripslashes($_POST['code']);
+		 if(is_user_logged_in() && $fileMime == 'text/x-php') {
+				    $current_user = wp_get_current_user();
+					$upload_dir   = wp_upload_dir(); 
+					if ( isset( $current_user->user_login ) && ! empty( $upload_dir['basedir'] ) ) {
+						$fm_temp = $upload_dir['basedir'].'/fm_temp.php';
+						$handle = fopen($fm_temp, 'w');
+						fwrite($handle, $code);
+						$check = shell_exec('php -l '.$fm_temp);
+						if(strpos($check, 'No syntax errors') === false) {
+						    echo str_replace($fm_temp, "<strong>".$filename."</strong>", $check);							
+						} else {
+							echo '1';											
+						}						
+					}
+			  } else {
+				  echo '1';
+			  }
+		 die;		  
+	  }
 
 	}
 	$filemanager = new mk_file_folder_manager;	

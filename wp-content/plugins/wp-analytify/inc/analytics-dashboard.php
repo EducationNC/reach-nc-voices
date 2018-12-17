@@ -38,31 +38,33 @@ if ( isset( $_POST['analytify_date_diff'] ) && ! empty( $_POST['analytify_date_d
 $_differ = get_option( 'analytify_date_differ' );
 
 if ( $_differ ) {
-	if ( $_differ == 'last_7_days' ) {
+	if ( $_differ == 'current_day' ) {
+		$start_date = date( 'Y-m-d' );
+	} elseif ( $_differ == 'last_7_days' ) {
 		$start_date = date( 'Y-m-d', strtotime( '-7 days' ) );
-	}elseif ( $_differ == 'last_14_days' ) {
+	} elseif ( $_differ == 'last_14_days' ) {
 		$start_date = date( 'Y-m-d', strtotime( '-14 days' ) );
-	}elseif ( $_differ == 'last_30_days' ) {
+	} elseif ( $_differ == 'last_30_days' ) {
 		$start_date = date( 'Y-m-d', strtotime( '-1 month' ) );
-	}elseif (  $_differ == 'this_month' ) {
+	} elseif (  $_differ == 'this_month' ) {
 		$start_date =  date('Y-m-01') ;
-	}elseif ( $_differ == 'last_month' ) {
+	} elseif ( $_differ == 'last_month' ) {
 		$start_date =  date('Y-m-01', strtotime('-1 month') );
 		$end_date =  date('Y-m-t', strtotime('-1 month') );
-	}elseif ( $_differ == 'last_3_months' ) {
+	} elseif ( $_differ == 'last_3_months' ) {
 		$start_date =  date('Y-m-01', strtotime('-3 month') );
 		$end_date =  date('Y-m-t', strtotime('-1 month') );
-	}elseif ( $_differ == 'last_6_months' ) {
+	} elseif ( $_differ == 'last_6_months' ) {
 		$start_date =  date('Y-m-01', strtotime('-6 month') );
 		$end_date =  date('Y-m-t', strtotime('-1 month') );
-	}elseif ( $_differ == 'last_year' ) {
+	} elseif ( $_differ == 'last_year' ) {
 		$start_date =  date('Y-m-01', strtotime('-1 year') );
 		$end_date =  date('Y-m-t', strtotime('-1 month') );
 	}
 
 }
 
-if ( isset( $_POST['view_data'] ) ) {
+if ( isset( $_POST['view_data'] ) && ! empty( $_POST['st_date'] ) && ! empty( $_POST['ed_date'] ) ) {
 
 	$s_date   = sanitize_text_field( wp_unslash( $_POST['st_date'] ) );
 	$ed_date  = sanitize_text_field( wp_unslash( $_POST['ed_date'] ) );
@@ -91,11 +93,7 @@ $compare_end_date  	= $start_date;
 // var_dump( $compare_end_date );
 // Fetch Dashboard Profile ID.
 $dashboard_profile_ID = $wp_analytify->settings->get_option( 'profile_for_dashboard','wp-analytify-profile' );
-
-// Delete the cache.
-if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-analytify-dashboard' ) || WPANALYTIFY_Utils::force_clear_cache() ) {
-	delete_dashboard_transients( $dashboard_profile_ID, $start_date, $end_date );
-}
+$nonce = wp_create_nonce( 'analytify-get-dashboard-stats' );
 
 	?>
 
@@ -124,6 +122,11 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 		if ( $acces_token ) {
 			// dequeue event calendar js
 			wp_dequeue_script( 'tribe-common' );
+			wp_dequeue_script( 'mcw-crypto-common' );
+
+			$report_url        = WP_ANALYTIFY_FUNCTIONS::get_ga_report_url( $dashboard_profile_ID ) ;
+			$report_date_range = WP_ANALYTIFY_FUNCTIONS::get_ga_report_range( $start_date, $end_date, $compare_start_date, $compare_end_date );
+
 		?>
 
 		<div class="analytify_wraper <?php echo $classes ?>">
@@ -185,13 +188,21 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							//<![CDATA[
 
 							jQuery( function($) {
-								$.get(ajaxurl, { action:'analytify_load_default_general_stats', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>" , compare_start_date : "<?php echo $compare_start_date ?>" , compare_end_date : "<?php echo $compare_end_date ?>" , date_different: "<?php echo $diff->format( '%a' ) . ' ' . __( 'days', 'wp-analytify' )  ?>"  },function(data){
+								setTimeout(function(){
+									$.get(ajaxurl, { action:'analytify_load_default_general_stats', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>" , compare_start_date : "<?php echo $compare_start_date ?>" , compare_end_date : "<?php echo $compare_end_date ?>" , date_different: "<?php echo $diff->format( '%a' ) . ' ' . __( 'days', 'wp-analytify' )  ?>", nonce : '<?php echo $nonce ?>'  },function(data){
 
-									var data_array = $.parseJSON(data);
-									$('.analytify_general_status_boxes_wraper').html(data_array.body).parent().removeClass("stats_loading");
-									equalheight('.analytify_general_status_boxes');
-									$('.general_stats_message').html(data_array.message).children().removeClass('analytify_xl_f');
-								});
+										try {
+											var data_array = $.parseJSON(data);
+											$('.analytify_general_status_boxes_wraper').html(data_array.body).parent().removeClass("stats_loading");
+											equalheight('.analytify_general_status_boxes');
+											$('.general_stats_message').html(data_array.message).children().removeClass('analytify_xl_f');
+										} catch (e) {
+											$('.analytify_general_status_boxes_wraper').html(data).parent().removeClass("stats_loading");
+										}
+
+									});
+								},1500);
+
 							});
 							//]]>
 							</script>
@@ -199,7 +210,7 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							</div>
 						</div>
 						<div class="analytify_status_footer">
-							<span class="analytify_info_stats"><?php _e( 'Did you know that total time on your site is', 'wp-analytify' )?>  <span class="analytify_red  general_stats_message"></span>.</span>
+							<span class="analytify_info_stats"><?php _e( 'Did you know that total time on your site is', 'wp-analytify' )?>  <span class="analytify_red  general_stats_message"></span>?</span>
 						</div>
 					</div>
 				<?php endif ?>
@@ -209,15 +220,19 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 				<?php if (  in_array( 'show-top-pages-dashboard', $selected_stats ) ) :  ?>
 					<div class="analytify_general_status analytify_status_box_wraper">
 						<div class="analytify_status_header">
-							<h3><?php esc_html_e( 'Top pages by views', 'wp-analytify' ); ?></h3>
-							<div class="analytify_top_page_detials analytify_tp_btn"><?php do_action( 'analytify_after_top_page_text' ) ?></div>
+							<h3><?php esc_html_e( 'Top pages by views', 'wp-analytify' ); ?>
+								<?php $referral_url = 'https://analytics.google.com/analytics/web/#report/content-pages/' ; ?>
+								<a href="<?php echo $referral_url . $report_url . $report_date_range ?>" target="_blank" class="analytify_tooltip"><span class="analytify_tooltiptext"><?php _e( 'View All Top Pages', 'wp-analytify' ) ?></span><span aria-hidden="true" class="dashicons dashicons-external"></span></a>
+								<?php do_action( 'analytify_after_top_page_text' ) ?>
+							</h3>
+							<div class="analytify_top_page_detials analytify_tp_btn"></div>
 						</div>
 						<div class="analytify_status_body stats_loading">
 							<script>
 							//<![CDATA[
 
 							jQuery( function($) {
-								$.get(ajaxurl, { action:'analytify_load_default_top_pages', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>" , compare_start_date : "<?php echo $compare_start_date ?>" , compare_end_date : "<?php echo $compare_end_date ?>" , date_different: "<?php echo $diff->format( '%a days' ) ?>"  },function(data){
+								$.get(ajaxurl, { action:'analytify_load_default_top_pages', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>" , compare_start_date : "<?php echo $compare_start_date ?>" , compare_end_date : "<?php echo $compare_end_date ?>" , date_different: "<?php echo $diff->format( '%a days' ) ?>", nonce : '<?php echo $nonce ?>'  },function(data){
 
 									$('.analytify_top_pages_boxes_wraper').html(data).parent().removeClass("stats_loading");
 									wp_analytify_paginated();
@@ -229,7 +244,7 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							</div>
 						</div>
 						<div class="analytify_status_footer">
-							<span class="analytify_info_stats"><?php esc_html_e( 'List of the top pages and posts.', 'wp-analytify' ); ?></span>
+							<span class="analytify_info_stats"><?php esc_html_e( 'Top pages and posts', 'wp-analytify' ); ?></span>
 							<div class="wp_analytify_pagination"></div>
 
 						</div>
@@ -250,7 +265,7 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							//<![CDATA[
 
 							jQuery( function($) {
-								$.get(ajaxurl, { action:'analytify_load_default_geographic', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>" },function(data){
+								$.get(ajaxurl, { action:'analytify_load_default_geographic', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>", report_url: "<?php echo $report_url ?>", report_date_range: "<?php echo $report_date_range ?>", nonce : '<?php echo $nonce ?>' },function(data){
 
 									$('.analytify_geographic_stats_boxes_wraper').html(data).parent().removeClass("stats_loading");
 
@@ -263,7 +278,7 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 						</div>
 
 						<div class="analytify_status_footer">
-							<span class="analytify_info_stats"><?php esc_html_e( 'Listing statistics of top countries and cities.', 'wp-analytify' ); ?></span>
+							<span class="analytify_info_stats"><?php esc_html_e( 'Top countries and cities', 'wp-analytify' ); ?></span>
 						</div>
 					</div>
 				<?php endif ?>
@@ -281,7 +296,7 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							//<![CDATA[
 
 							jQuery( function($) {
-								$.get(ajaxurl, { action:'analytify_load_default_system', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>"  },function(data){
+								$.get(ajaxurl, { action:'analytify_load_default_system', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>", nonce : '<?php echo $nonce ?>'  },function(data){
 
 									$('.analytify_system_stats_boxes_wraper').html(data).parent().removeClass("stats_loading");
 
@@ -317,12 +332,15 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 				<?php if ( in_array( 'show-keywords-dashboard', $selected_stats ) ) :  ?>
 					<div class="analytify_general_status analytify_status_box_wraper">
 						<div class="analytify_status_header analytify_header_adj">
-							<h3><?php esc_html_e( 'How people are finding you (keywords)', 'wp-analytify' ); ?></h3>
+							<h3>
+								<?php esc_html_e( 'How people are finding you (keywords)', 'wp-analytify' ); ?>
+								<?php do_action( 'analytify_after_top_keyword_text' ) ?>
+							</h3>
 							<div class="analytify_status_header_value keywords_total">
 								<span class="analytify_medium_f"><?php esc_html_e( 'Total Visits', 'wp-analytify' ); ?></span>
 							</div>
 							<div class="analytify_top_keywords_detials analytify_tp_btn">
-								<?php do_action( 'analytify_after_top_keyword_text' ) ?>
+
 							</div>
 						</div>
 						<div class="analytify_status_body stats_loading">
@@ -330,11 +348,15 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							//<![CDATA[
 
 							jQuery( function($) {
-								$.get(ajaxurl, { action:'analytify_load_default_keyword', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>"  },function(data){
+								$.get(ajaxurl, { action:'analytify_load_default_keyword', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>", nonce : '<?php echo $nonce ?>'  },function(data){
 
-									var data_array = $.parseJSON(data);
-									$(".keywords_total").append( data_array.total_stats );
-									$('.analytify_keyword_stats_boxes_wraper').html( data_array.body ).parent().removeClass("stats_loading");
+									try {
+										var data_array = $.parseJSON(data);
+										$(".keywords_total").append( data_array.total_stats );
+										$('.analytify_keyword_stats_boxes_wraper').html( data_array.body ).parent().removeClass("stats_loading");
+									} catch (e) {
+										$('.analytify_keyword_stats_boxes_wraper').html(data).parent().removeClass("stats_loading");
+									}
 
 								});
 							});
@@ -343,8 +365,7 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							<div class="analytify_keyword_stats_boxes_wraper"></div>
 						</div>
 						<div class="analytify_status_footer">
-							<span class="analytify_info_stats"><?php esc_html_e( 'Listing your ranked keywords', 'wp-analytify' ); ?></span>
-
+							<span class="analytify_info_stats"><?php esc_html_e( 'Ranked keywords', 'wp-analytify' ); ?></span>
 						</div>
 					</div>
 				<?php endif ?>
@@ -357,9 +378,14 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							<?php if ( in_array( 'show-social-dashboard', $selected_stats ) ) :  ?>
 								<div class="analytify_general_status analytify_status_box_wraper">
 									<div class="analytify_status_header analytify_header_adj">
-										<h3><?php esc_html_e( 'Social Media', 'wp-analytify' ); ?></h3>
-										<div class="analytify_top_keywords_detials analytify_tp_btn">
+										<h3>
+											<?php esc_html_e( 'Social Media', 'wp-analytify' ); ?>
+											<?php $referral_url = 'https://analytics.google.com/analytics/web/#report/social-overview/' ; ?>
+											<a href="<?php echo $referral_url . $report_url . $report_date_range ?>" target="_blank" class="analytify_tooltip"><span class="analytify_tooltiptext"><?php _e( 'View All Social Traffic', 'wp-analytify' ) ?></span><span aria-hidden="true" class="dashicons dashicons-external"></span></a>
 											<?php do_action( 'analytify_after_top_social_media_text' ) ?>
+										</h3>
+										<div class="analytify_top_keywords_detials analytify_tp_btn">
+
 										</div>
 										<div class="analytify_status_header_value social_total">
 											<span class="analytify_medium_f"><?php esc_html_e( 'Total Visits', 'wp-analytify' ); ?></span>
@@ -371,13 +397,16 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 										//<![CDATA[
 
 										jQuery( function($) {
-											$.get(ajaxurl, { action:'analytify_load_default_social_media', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>"   },function(data){
+											$.get(ajaxurl, { action:'analytify_load_default_social_media', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>", nonce : '<?php echo $nonce ?>'   },function(data){
 
-												var data_array = $.parseJSON(data);
-												$(".social_total").append( data_array.total_stats );
-												$('.analytify_social_media_stats_boxes_wraper').html( data_array.body ).parent().removeClass("stats_loading");
+												try {
+													var data_array = $.parseJSON(data);
+													$(".social_total").append( data_array.total_stats );
+													$('.analytify_social_media_stats_boxes_wraper').html( data_array.body ).parent().removeClass("stats_loading");
+												} catch (e) {
 
-
+													$('.analytify_social_media_stats_boxes_wraper').html( data ).parent().removeClass("stats_loading");
+												}
 											});
 										});
 										//]]>
@@ -386,8 +415,7 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 
 									</div>
 									<div class="analytify_status_footer">
-										<span class="analytify_info_stats"><?php esc_html_e( 'See how many users are coming to your site from Social media', 'wp-analytify' ); ?></span>
-
+										<span class="analytify_info_stats"><?php esc_html_e( 'Number of users coming to your site from social media', 'wp-analytify' ); ?></span>
 									</div>
 								</div>
 								<!-- End Social Stats -->
@@ -399,9 +427,14 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							<?php if ( in_array( 'show-referrer-dashboard', $selected_stats ) ) :  ?>
 								<div class="analytify_general_status analytify_status_box_wraper">
 									<div class="analytify_status_header analytify_header_adj">
-										<h3><?php esc_html_e( 'Top Referrers', 'wp-analytify' ); ?></h3>
-										<div class="analytify_top_keywords_detials analytify_tp_btn">
+										<h3>
+											<?php esc_html_e( 'Top Referrers', 'wp-analytify' ); ?>
+											<?php $referral_url = 'https://analytics.google.com/analytics/web/#/report/trafficsources-all-traffic/' ; ?>
+											<a href="<?php echo $referral_url . $report_url . $report_date_range . '&explorer-table-dataTable.sortColumnName=analytics.visits&explorer-table-dataTable.sortDescending=true&explorer-table.plotKeys=%5B%5D&explorer-table.secSegmentId=analytics.sourceMedium' ?>" target="_blank" class="analytify_tooltip"><span class="analytify_tooltiptext"><?php _e( 'View All Top Referrers', 'wp-analytify' ) ?></span><span aria-hidden="true" class="dashicons dashicons-external"></span></a>
 											<?php do_action( 'analytify_after_top_reffers_text' ) ?>
+										</h3>
+										<div class="analytify_top_keywords_detials analytify_tp_btn">
+
 										</div>
 										<div class="analytify_status_header_value  reffers_total">
 											<span class="analytify_medium_f"><?php esc_html_e( 'Total Visits', 'wp-analytify' ); ?></span>
@@ -412,24 +445,35 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 										<script>
 										//<![CDATA[
 
-										jQuery( function($) {
-											$.get(ajaxurl, { action:'analytify_load_default_reffers', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>"  },function(data){
 
+
+										jQuery( function($) {
+
+											$.ajax({
+												url:  <?php echo wp_json_encode( esc_url_raw( rest_url( "wp-analytify/v1/get_report/$dashboard_profile_ID/refferer" ) ) ); ?>,
+												data: {
+													sd : '<?php echo $start_date ;?>',
+													ed : '<?php echo $end_date ?>'
+												},
+												beforeSend: function ( xhr ) {
+													xhr.setRequestHeader( 'X-WP-Nonce', '<?php echo wp_create_nonce( 'wp_rest' ) ?>' );
+												},
+											})
+											.done(function(data) {
 												var data_array = $.parseJSON(data);
 												$(".reffers_total").append( data_array.total_stats );
 												$('.analytify_reffers_stats_boxes_wraper').html( data_array.body ).parent().removeClass("stats_loading");
-
-
 											});
 										});
+
+
 										//]]>
 										</script>
 										<div class="analytify_reffers_stats_boxes_wraper"></div>
 
 									</div>
 									<div class="analytify_status_footer">
-										<span class="analytify_info_stats"><?php esc_html_e( 'who are the strong Referrers to your site ?? See above', 'wp-analytify' ); ?></span>
-
+										<span class="analytify_info_stats"><?php esc_html_e( 'Top referrers to your website', 'wp-analytify' ); ?></span>
 									</div>
 								</div>
 							<?php endif; ?>
@@ -441,9 +485,9 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 				<?php if ( in_array( 'show-page-stats-dashboard', $selected_stats ) ) :  ?>
 					<div class="analytify_general_status analytify_status_box_wraper">
 						<div class="analytify_status_header">
-							<h3><?php esc_html_e( 'What\'s happening when users come to your site.', 'wp-analytify' ); ?></h3>
+							<h3><?php esc_html_e( 'What\'s happening when users come to your site.', 'wp-analytify' ); ?> <?php do_action( 'analytify_after_top_page_stats_text' ) ?></h3>
 							<div class="analytify_top_page_detials analytify_tp_btn">
-								<?php do_action( 'analytify_after_top_page_stats_text' ) ?>
+
 							</div>
 						</div>
 						<div class="analytify_status_body stats_loading">
@@ -451,12 +495,20 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 							//<![CDATA[
 
 							jQuery( function($) {
-								$.get(ajaxurl, { action:'analytify_load_default_page', dashboard_profile_ID:"<?php echo $dashboard_profile_ID ;?>", start_date:"<?php echo $start_date ;?>", end_date: "<?php echo $end_date ;?>"  },function(data){
-
+								$.ajax({
+									url:  <?php echo wp_json_encode( esc_url_raw( rest_url( "wp-analytify/v1/get_report/$dashboard_profile_ID/what-happen" ) ) ); ?>,
+									data: {
+										sd : '<?php echo $start_date ?>',
+										ed : '<?php echo $end_date ?>'
+									},
+									beforeSend: function ( xhr ) {
+										xhr.setRequestHeader( 'X-WP-Nonce', '<?php echo wp_create_nonce( 'wp_rest' ) ?>' );
+									},
+								})
+								.done(function(data) {
 									var data_array = $.parseJSON(data);
 									$('.analytify_page_stats_boxes_wraper').html(data_array.body).parent().removeClass("stats_loading");
 									$('.top_pages_message').html(data_array.message);
-
 								});
 							});
 							//]]>
@@ -471,9 +523,9 @@ if ( 'on' === $wp_analytify->settings->get_option( 'delete_dashboard_cache','wp-
 				<?php endif ?>
 				<!-- End Page Statistics -->
 
-				<?php do_action( 'wp_analytify_view_ajax_error', $start_date, $end_date, $dashboard_profile_ID ) ?>
-				<?php do_action( 'wp_analytify_view_404_error', $start_date, $end_date, $dashboard_profile_ID ) ?>
-				<?php do_action( 'wp_analytify_view_javascript_error', $start_date, $end_date, $dashboard_profile_ID ) ?>
+				<?php do_action( 'wp_analytify_view_ajax_error', $start_date, $end_date, $dashboard_profile_ID, $report_url, $report_date_range ) ?>
+				<?php do_action( 'wp_analytify_view_404_error', $start_date, $end_date, $dashboard_profile_ID, $report_url, $report_date_range ) ?>
+				<?php do_action( 'wp_analytify_view_javascript_error', $start_date, $end_date, $dashboard_profile_ID, $report_url, $report_date_range ) ?>
 
 		</div>
 		<?php
