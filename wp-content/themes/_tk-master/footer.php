@@ -65,6 +65,8 @@
     </div>
 </footer>
 
+<!-- <script src="https://cdn.jsdelivr.net/gh/cferdinandi/smooth-scroll@15/dist/smooth-scroll.polyfills.min.js"></script> -->
+
 
 <?php wp_footer(); ?>
 

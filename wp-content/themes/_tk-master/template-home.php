@@ -82,35 +82,21 @@ get_header(); ?>
                 <?php while ($the_query->have_posts()) :
                 $the_query->the_post();
                 $do_not_duplicate = $post->ID;
-                    $keyword = $post->post_title;
-                    $tempURL = "http://api.publicinput.com/Api/HighlightedComments?key=ser31d0ood0jne967olxy0wwyqng9chf&set={$keyword}";
-                    $json = file_get_contents($tempURL);
-                    $data = json_decode($json, true);
-		   $pollname = $data[0]['project']['name'];
-     		   $question = get_the_content();
+                $keyword = $post->post_title;
+                $tempURL = "http://api.publicinput.com/Api/HighlightedComments?key=ser31d0ood0jne967olxy0wwyqng9chf&set={$keyword}";
+                $json = file_get_contents($tempURL);
+                $data = json_decode($json, true);
+		            $pollname = $data[0]['project']['name'];
+     		        $question = get_the_content();
                 ?>
-<div class="col-md-4">
-                 <h4 class="service-heading"><?php echo $question; ?></h4>
-                    <a class="btn btn-primary btn-lg portfolio-link" data-toggle="modal"
-                       href="/sign-up">Join the conversation</a>
-
-                    <div class="feed">
-                        
-			<?php
-                  	for ($x = 0; $x <= (count($data)-1); $x++) {
-				echo "<div class='feed__quote_box'>
-                                  <h4 class='feed__quote'>{$data[$x]['comment']}</h4>
-                                </div>";	
-			} ?>
-                    </div>
+                <div class="col-md-4">
+                    <h4 class="service-heading"><?php echo $question; ?></h4>
+                    <a class="btn btn-primary btn-lg portfolio-link" data-toggle="modal" href="/sign-up">Join the conversation</a>
                 </div>
-               
-
                 <?php endwhile; ?><!-- END of Post -->
             </div>
         <?php endif;
         wp_reset_query(); ?>
-
     </div>
 </section>
 
@@ -219,7 +205,7 @@ get_header(); ?>
 
             <div class="col-lg-2"></div>
         </div>
-	
+
         <div class="row">
             <div class="col-lg-6">
                 <h4 class="signup__subhead"> <?php the_field('sign_up_left_form_title'); ?></h4>
@@ -250,7 +236,7 @@ get_header(); ?>
             </div>
         </div>
         <?php $arg = array(
-            'post_type' => 'bios', 
+            'post_type' => 'bios',
             'order' => 'ASC',
             'orderby' => 'menu_order',
             'posts_per_page' => 3
@@ -292,9 +278,7 @@ get_header(); ?>
             </div>
         <?php endif; ?>
         <div class="row">
-            <div class="col-lg-12" style="display: flex;
-            justify-content: flex-end;
-            margin-top: 3%;">
+            <div class="col-lg-12 flex-row"
                 <a href="#partnersModal" data-toggle="modal"> <?php the_field('partners_text'); ?></a>
             </div>
         </div>

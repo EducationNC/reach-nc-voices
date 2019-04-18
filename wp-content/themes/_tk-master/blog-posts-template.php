@@ -27,7 +27,7 @@
                                                 <?php the_title(); ?>
                                             </a>
                                         </h1>
-                                        <p class="short-description"><?php echo get_the_content(); ?></p>
+                                        <p class="short-description"><?php// echo get_the_content(); ?></p>
                                         <div class="button">
                                             <a href="<?php the_permalink(); ?>">Read More</a>
                                         </div>

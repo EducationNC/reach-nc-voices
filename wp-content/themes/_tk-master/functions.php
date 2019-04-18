@@ -253,20 +253,20 @@ register_sidebar(array(
 ));
 
 
-add_action('init', 'register_post_types');
-function register_post_types()
-{
+/*---------------------------Start Conversations------------------------------------------*/
+add_action('init', 'register_post_types_conversations');
+function register_post_types_conversations() {
     register_post_type('conversations', array(
         'label' => null,
         'labels' => array(
             'name' => 'Conversations',
-            'singular_name' => 'Conversation',
-            'add_new' => 'Add  Conversations',
-            'add_new_item' => 'Add new  Conversations',
-            'edit_item' => 'Edit Conversation',
-            'new_item' => 'New Conversation',
-            'view_item' => 'View Conversation',
-            'search_items' => 'Search  Conversation',
+            'singular_name' => 'Conversations',
+            'add_new' => 'Add',
+            'add_new_item' => 'Add new',
+            'edit_item' => 'Edit',
+            'new_item' => 'New',
+            'view_item' => 'View',
+            'search_items' => 'Search',
             'not_found' => 'Not found',
             'not_found_in_trash' => 'Not found in trash',
             'parent_item_colon' => '',
@@ -275,21 +275,23 @@ function register_post_types()
         'description' => '',
         'public' => true,
         'hierarchical' => true,
-        'supports' => array('title', 'editor'), // 'title','editor','author','thumbnail','excerpt','trackbacks','custom-fields','comments','revisions','page-attributes','post-formats'
-        'has_archive' => false,
+        'supports' => array('title', 'editor', 'author', 'thumbnail', 'excerpt'), // 'title','editor','author','thumbnail','excerpt','trackbacks','custom-fields','comments','revisions','page-attributes','post-formats'
+        'has_archive' => true,
         'rewrite' => true,
         'query_var' => true,
     ));
 }
 
-add_action('template_redirect', 'redirect_post_type_single');
-function redirect_post_type_single()
-{
-    if (!is_singular('conversations'))
-        return;
-    wp_redirect(home_url());
-    exit;
-}
+
+
+
+
+
+
+
+
+
+
 
 
 add_action('init', 'register_post_types_bios');
@@ -347,8 +349,7 @@ function redirect_bios()
 
 /*---------------------------Start Share Your Voice------------------------------------------*/
 add_action('init', 'register_post_types_share_your_voice');
-function register_post_types_share_your_voice()
-{
+function register_post_types_share_your_voice() {
     register_post_type('share_your_voice', array(
         'label' => null,
         'labels' => array(
