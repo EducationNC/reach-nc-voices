@@ -46,7 +46,7 @@ section h3.section-subheading {
   font-size: 19px;
   line-height: 24px;
   font-weight: 400;
-  font-style: italic;
+  /* font-style: italic; */
   margin-bottom: 75px;
   text-transform: none;
   font-family: Lato, sans-serif
@@ -272,7 +272,14 @@ article {
   text-transform: none;
   /* height: 2em; */
   color: #fff;
+  font-weight: 400;
+  font-family: 'Lato', sans-serif;
   /* border: 1px solid red; */
+}
+
+#conversations a {
+  font-weight: 300;
+  font-family: 'Lato', sans-serif;
 }
 
 .conversation-descr {
@@ -683,7 +690,9 @@ article {
 
 .team-member {
   margin-bottom: 50px;
-  text-align: center
+  text-align: center;
+  width: 30%;
+  margin: 0px 10px;
 }
 
 .team-member img {
@@ -857,6 +866,13 @@ form.wpcf7-form {
   -webkit-transition: border-color ease-in-out .15s, -webkit-box-shadow ease-in-out .15s;
   -o-transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
   transition: border-color ease-in-out .15s, box-shadow ease-in-out .15s;
+}
+
+/* .btn-lg {
+  border-radius: 0;
+} */
+#conversations>div>div.row.text-center>div:nth-child(1)>a {
+  border-radius: 0;
 }
 
 .wpcf7-submit {
@@ -1274,11 +1290,12 @@ footer {
   display: flex;
   justify-content: center;
   margin-top: 3%;
+  flex-wrap: wrap;
 }
 
 .flex-row p {
   font-size: 15px;
-  color: #901969;
+  /* color: #901969; */
 }
 
 .flex-row p:hover {

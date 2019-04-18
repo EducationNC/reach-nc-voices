@@ -239,22 +239,18 @@ get_header(); ?>
             'post_type' => 'bios',
             'order' => 'ASC',
             'orderby' => 'menu_order',
-            'posts_per_page' => 3
         );
         $the_query = new WP_Query($arg);
         if ($the_query->have_posts()) : ?>
-            <div class="row">
+            <div class="row flex-row">
                 <?php while ($the_query->have_posts()) :
                 $the_query->the_post();
                 $do_not_duplicate = $post->ID; ?>
-                    <div class="col-sm-4">
-                        <div class="team-member">
-                            <img class="mx-auto rounded-circle" src="<?php the_post_thumbnail_url(); ?>" alt="">
-                            <h4><?php the_title(); ?></h4>
-                            <p class="text-muted"><?php the_excerpt(); ?></p>
-                            <p class="text-muted"><?php the_content(); ?></p>
-
-                        </div>
+                    <div class="team-member">
+                        <img class="mx-auto" src="<?php the_post_thumbnail_url(); ?>" alt="">
+                        <h4><?php the_title(); ?></h4>
+                        <p class="text-muted"><?php the_field('subtitle'); ?></p>
+                        <p class="text-muted"><?php the_content(); ?></p>
                     </div>
                 <?php endwhile; ?>
             </div>

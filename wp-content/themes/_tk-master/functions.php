@@ -316,7 +316,7 @@ function register_post_types_bios()
         'description' => '',
         'public' => true,
         'hierarchical' => true,
-        'supports' => array('title', 'editor', 'thumbnail', 'excerpt'), // 'title','editor','author','thumbnail','excerpt','trackbacks','custom-fields','comments','revisions','page-attributes','post-formats'
+        'supports' => array('title', 'editor', 'thumbnail'), // 'title','editor','author','thumbnail','excerpt','trackbacks','custom-fields','comments','revisions','page-attributes','post-formats'
         'has_archive' => false,
         'rewrite' => true,
         'query_var' => true,
