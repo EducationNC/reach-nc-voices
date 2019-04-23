@@ -57,30 +57,51 @@
 
 
     <div class="related-posts">
-        <h3>Related Posts</h3>
-        <?php
-          $related = new WP_Query(
-                array(
-                    'category__in'   => wp_get_post_categories( $post->ID ),
-                    'posts_per_page' => 3,
-                    'post__not_in'   => array( $post->ID )
-                )
-            );
+      <div class="container" id="related-posts">
+          <div class="row">
+            <div class="col-md-12">
+              <h3>Related Posts</h3>
+            </div>
+          </div>
+          <div class="row">
+              <?php
+                $related_args = array(
+                	'post_type' => 'post',
+                	'posts_per_page' => 3,
+                  'post__not_in'   => array( $post->ID )
+                );
+                $related = new WP_Query( $related_args );
 
-            if( $related->have_posts() ) {
-                while( $related->have_posts() ) {
-                    $related->the_post();
-                    /*whatever you want to output*/
-                }
-                wp_reset_postdata();
-            }
-          ?>
+                if( $related->have_posts() ) :
+                ?>
+
+                		<?php while( $related->have_posts() ): $related->the_post();
+                      $categories = get_the_category($post->ID); ?>
+                      <div class="col-md-4 col-sm-6 portfolio-item">
+                          <a class="portfolio-link"
+                             href="<?php the_permalink(); ?>">
+                              <div class="portfolio-hover">
+                                  <div class="portfolio-hover-content">
+                                      <i class="fa fa-plus fa-3x"></i>
+                                  </div>
+                              </div>
+                              <img class="img-fluid" src="<?php the_post_thumbnail_url(); ?>" alt="">
+                          </a>
+                          <div class="portfolio-caption">
+                              <h5><?php the_title(); ?></h5>
+                              <!-- <p class="text-muted"><?php //echo $category->cat_name; ?></p> -->
+                          </div>
+                      </div>
+                		<?php endwhile; ?>
+
+                <?php endif;
+                wp_reset_postdata();?>
+            </div>
+        </div>
     </div>
 
-
-
     <div class="related-posts">
-        <h3>Related Posts</h3>
+        <!-- <h3>Related Posts</h3> -->
         <?php// get_related_posts_thumbnails(); ?>
     </div>
 
