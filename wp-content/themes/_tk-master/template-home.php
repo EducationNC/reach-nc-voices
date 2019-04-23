@@ -61,6 +61,19 @@ get_header(); ?>
     </div>
 </section>
 
+<!-- <section id="colors">
+  <div class="container">
+    <div class="row">
+        <div class="col-lg-2 block-1">#731454</div>
+        <div class="col-lg-2 block-3">#384E77</div>
+        <div class="col-lg-2 block-4">#3399CC</div>
+        <div class="col-lg-2 block-5">#EC6A56</div>
+        <div class="col-lg-2 block-6">#44474D or #212529;</div>
+    </div>
+  </div>
+</section> -->
+
+
 <!-- Conversations -->
 <section id="conversations">
     <div class="container">
@@ -71,32 +84,85 @@ get_header(); ?>
             </div>
         </div>
         <?php $arg = array(
-            'post_type' => 'conversations', /*<-- Enter name of Custom Post Type here*/
-            'order' => 'ASC',
-            'orderby' => 'menu_order',
+            'post_type' => 'question_of_the_week', /*<-- Enter name of Custom Post Type here*/
+            'order' => 'DESC',
+            'post_status' => 'publish',
+            'orderby' => 'publish_date',
+            'order' => 'DESC',
             'posts_per_page' => 3
         );
-        $the_query = new WP_Query($arg);
-        if ($the_query->have_posts()) : ?>
-            <div class="row text-center">
-                <?php while ($the_query->have_posts()) :
-                $the_query->the_post();
-                $do_not_duplicate = $post->ID;
-                $keyword = $post->post_title;
-                $tempURL = "http://api.publicinput.com/Api/HighlightedComments?key=ser31d0ood0jne967olxy0wwyqng9chf&set={$keyword}";
-                $json = file_get_contents($tempURL);
-                $data = json_decode($json, true);
-		            $pollname = $data[0]['project']['name'];
-     		        $question = get_the_content();
-                ?>
-                <div class="col-md-4">
-                    <h4 class="service-heading"><?php echo $question; ?></h4>
-                    <a class="btn btn-primary btn-lg portfolio-link" data-toggle="modal" href="/sign-up">Join the conversation</a>
-                </div>
-                <?php endwhile; ?><!-- END of Post -->
+
+        $query = new WP_Query($arg);
+
+        if ( $query->have_posts() ) {  ?>
+          <div class="row text-center">
+
+          <?php $currentpost = 0;
+
+          while ( $query->have_posts() ) : $query->the_post();
+
+          $reach_title[$currentpost] = get_the_title();
+          $reach_id[$currentpost] = get_the_id();
+          $reach_date[$currentpost] = get_field('date');
+          $reach_content[$currentpost] = get_the_content();
+          ?>
+            <div class="col-md-4" id="<?php echo $reach_id[$currentpost] ?>">
+                <h4 class="service-heading"><?php echo $reach_title[$currentpost] ?></h4>
+                <a class="btn btn-primary btn-lg portfolio-link" data-toggle="modal" href="/sign-up">Join the conversation</a>
             </div>
-        <?php endif;
-        wp_reset_query(); ?>
+
+          <?php $currentpost++;
+
+          endwhile;
+
+          wp_reset_postdata();?>
+
+          </div> <?php
+          } ?>
+          <div class="row text-center">
+            <div class="col-md-12">
+              <div class="box0" id="box0">
+                <?php echo $reach_content[0];?>
+              </div>
+              <div class="box1 hide" id="box1">
+                <?php echo $reach_content[1];?>
+              </div>
+              <div class="box2 hide" id="box2">
+                <?php echo $reach_content[2];?>
+              </div>
+            </div>
+          </div>
+
+          <script type="text/javascript">
+          var reach0 = "<?php echo $reach_id[0]; ?>";
+          var reach1 = "<?php echo $reach_id[1]; ?>";
+          var reach2 = "<?php echo $reach_id[2]; ?>";
+          var reach0Click = document.getElementById(reach0);
+          var reach1Click = document.getElementById(reach1);
+          var reach2Click = document.getElementById(reach2);
+
+          document.getElementById(reach0).classList.add('active');
+
+          reach0Click.onclick = function() {
+              $('#box0').addClass('show').siblings('div').removeClass('show').addClass('hide');
+              $(reach1Click).removeClass('active');
+              $(reach2Click).removeClass('active');
+              $(reach0Click).addClass('active');
+          }
+          reach1Click.onclick = function() {
+              $('#box1').addClass('show').siblings('div').removeClass('show').addClass('hide');
+              $(reach0Click).removeClass('active');
+              $(reach2Click).removeClass('active');
+              $(reach1Click).addClass('active');
+          }
+          reach2Click.onclick = function() {
+              $('#box2').addClass('show').siblings('div').removeClass('show').addClass('hide');
+              $(reach1Click).removeClass('active');
+              $(reach0Click).removeClass('active');
+              $(reach2Click).addClass('active');
+          }
+
+          </script>
     </div>
 </section>
 
@@ -247,10 +313,10 @@ get_header(); ?>
                 $the_query->the_post();
                 $do_not_duplicate = $post->ID; ?>
                     <div class="team-member">
-                        <img class="mx-auto" src="<?php the_post_thumbnail_url(); ?>" alt="">
+                        <img class="mx-auto rounded-circle" src="<?php the_post_thumbnail_url(); ?>" alt="">
                         <h4><?php the_title(); ?></h4>
-                        <p class="text-muted"><?php the_field('subtitle'); ?></p>
-                        <p class="text-muted"><?php the_content(); ?></p>
+                        <p class=""><?php the_field('subtitle'); ?></p>
+                        <p class="left"><?php the_content(); ?></p>
                     </div>
                 <?php endwhile; ?>
             </div>

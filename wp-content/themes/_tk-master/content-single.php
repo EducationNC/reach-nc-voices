@@ -51,9 +51,37 @@
             '<span class="post-title">%title</span>',
     ));
     ?>
+
+
+
+
+
     <div class="related-posts">
-        <h2>Related Posts</h2>
-        <?php get_related_posts_thumbnails(); ?>
+        <h3>Related Posts</h3>
+        <?php
+          $related = new WP_Query(
+                array(
+                    'category__in'   => wp_get_post_categories( $post->ID ),
+                    'posts_per_page' => 3,
+                    'post__not_in'   => array( $post->ID )
+                )
+            );
+
+            if( $related->have_posts() ) {
+                while( $related->have_posts() ) {
+                    $related->the_post();
+                    /*whatever you want to output*/
+                }
+                wp_reset_postdata();
+            }
+          ?>
+    </div>
+
+
+
+    <div class="related-posts">
+        <h3>Related Posts</h3>
+        <?php// get_related_posts_thumbnails(); ?>
     </div>
 
 </article><!-- #post-## -->

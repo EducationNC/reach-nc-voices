@@ -24,35 +24,67 @@
 
 <body <?php body_class(); ?>>
 <?php do_action('before'); ?>
-<nav class="navbar navbar-expand-lg navbar-dark fixed-top" id="mainNav">
-    <?php // substitute the class "container-fluid" below if you want a wider content area ?>
-    <div class="container">
-        <a class="navbar-brand js-scroll-trigger" href="<?php echo home_url(); ?>"><img src="<?php the_field('site_logo', 'option'); ?>"
-                                                                        style="max-width:200px;"/>
-      </a>
 
 
-        <!-- .navbar-toggle is used as the toggle for collapsed navbar content -->
-        <button class="navbar-toggler navbar-toggler-right" type="button" data-toggle="collapse"
-                data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false"
-                aria-label="Toggle navigation">
-            <i class="fa fa-bars"></i>
-        </button>
-        <?php wp_nav_menu(
-            array(
-                'theme_location' => 'primary',
-                'depth' => 2,
-                'container' => 'div',
-                'container_id' => 'navbarResponsive',
-                'container_class' => 'collapse navbar-collapse',
-                'menu_class' => 'navbar-nav ml-auto',
-                'fallback_cb' => 'wp_bootstrap_navwalker::fallback',
-                'menu_id' => 'main-menu',
-                'walker' => new wp_bootstrap_navwalker()
-            )
-        ); ?>
-    </div><!-- .container -->
-</nav><!-- .site-navigation -->
-<header id="masthead" class="site-header" role="banner">
 
-</header>
+
+
+<section class="navigation">
+  <div class="nav-container">
+    <div class="brand">
+        <a class="navbar-brand js-scroll-trigger" href="<?php echo home_url(); ?>"><img class="large-img" src="<?php the_field('site_logo', 'option'); ?>" style=""/></a>
+    </div>
+    <nav>
+      <div class="nav-mobile"><a id="navbar-toggle" href="#!"><span></span></a></div>
+      <?php wp_nav_menu(
+        array(
+          'theme_location' => 'primary',
+          'menu_id' => 'main-menu',
+          'depth' => 2,
+          'container' => 'ul',
+          'menu_class'=> 'nav-list',
+          // 'walker' => new reach_walker()
+        )
+      ); ?>
+      <!-- <ul class="nav-list">
+        <li>
+          <a href="#!">Home</a>
+        </li>
+        <li>
+          <a href="#!">Reach in the Community</a>
+          <ul class="navbar-dropdown">
+            <li>
+              <a href="#!">Community Voices</a>
+            </li>
+            <li>
+              <a href="#!">Engage</a>
+            </li>
+            <li>
+              <a href="#!">Stylus</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="#!">Category</a>
+          <ul class="navbar-dropdown">
+            <li>
+              <a href="#!">Sass</a>
+            </li>
+            <li>
+              <a href="#!">Less</a>
+            </li>
+            <li>
+              <a href="#!">Stylus</a>
+            </li>
+          </ul>
+        </li>
+        <li>
+          <a href="#!">Contact</a>
+        </li>
+      </ul> -->
+    </nav>
+  </div>
+</section>
+
+
+<header id="masthead" class="site-header" role="banner"></header>
