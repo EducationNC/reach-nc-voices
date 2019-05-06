@@ -40,16 +40,16 @@
                     <li class="col-sm-12"><a id="ednc_title"><?php// the_field('footer_menu_title', 'option'); ?></a>
                         <?php wp_nav_menu(
                             array(
-                                'theme_location' => 'secondary',
+                              'theme_location' => 'secondary',
 //                        'container_class' => 'footer-menu',
-                                'fallback_cb' => 'wp_bootstrap_navwalker::fallback',
-                                'depth' => 2,
-                                'walker' => new wp_bootstrap_navwalker(),
-                                'menu' => '',
-                                'container' => 'div',
-                                'container_id' => '',
-                                'menu_class' => 'footer-menu',
-                                'menu_id' => '',
+                              'fallback_cb' => 'wp_bootstrap_navwalker::fallback',
+                              'depth' => 2,
+                              'walker' => new wp_bootstrap_navwalker(),
+                              'menu' => '',
+                              'container' => 'div',
+                              'container_id' => '',
+                              'menu_class' => 'footer-menu',
+                              'menu_id' => '',
                             )
                         );  ?>
                     </li>

@@ -14,6 +14,10 @@ jQuery(document).ready(function () {
         this.classList.toggle('active');
       });
 
+      jquery('#navbar-toggle').on('hover', function() {
+        this.classList.toggle('active');
+      });
+
 
       // If a link has a dropdown, add sub menu toggle.
       jquery('nav ul li a:not(:only-child)').click(function(e) {

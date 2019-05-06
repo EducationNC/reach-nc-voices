@@ -94,18 +94,20 @@ section h3.section-subheading {
 }
 
 .btn {
-  font-family: Merriweather, serif;
+  font-family: Lato, sans-serif;
   font-weight: 700
 }
 
 .btn-xl {
   font-size: 18px;
-  padding: 20px 40px
+  padding: 13px 25px;
+  /* text-transform: uppercase; */
 }
 
 .btn-primary {
   background-color: #731454;
   border-color: #731454;
+  border-radius: 5px;
 }
 
 .btn-primary:active, .btn-primary:focus, .btn-primary:hover {
@@ -267,7 +269,7 @@ article {
 
 .masthead .intro-text .intro-lead-in {
   font-size: 22px;
-  font-style: italic;
+  /* font-style: italic; */
   line-height: 22px;
   margin-bottom: 25px;
   font-family: Lato, sans-serif
@@ -289,7 +291,7 @@ article {
 
   .masthead .intro-text .intro-lead-in {
     font-size: 40px;
-    font-style: italic;
+    /* font-style: italic; */
     line-height: 40px;
     margin-bottom: 25px;
     font-family: Lato, sans-serif
@@ -949,6 +951,10 @@ form.wpcf7-form {
 } */
 #conversations>div>div.row.text-center>div:nth-child(1)>a {
   border-radius: 0;
+}
+
+#conversations>div>div:nth-child(2) {
+  margin-bottom: 30px;
 }
 
 .wpcf7-submit {
