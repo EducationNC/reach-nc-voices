@@ -78,6 +78,10 @@ section h3.section-subheading {
   font-family: Lato, sans-serif
 }
 
+.responsive-menu-submenu {
+  padding-left: 25px !important;
+}
+
 @media (min-width: 768px) {
   section {
     padding: 150px 0
