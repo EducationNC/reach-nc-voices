@@ -29,14 +29,14 @@
 
 
 
-<section class="navigation">
+<!-- <section class="navigation">
   <div class="nav-container">
     <div class="brand">
-        <a class="navbar-brand js-scroll-trigger" href="<?php echo home_url(); ?>"><img class="large-img" src="<?php the_field('site_logo', 'option'); ?>" style=""/></a>
+        <a class="navbar-brand js-scroll-trigger" href="<?php// echo home_url(); ?>"><img class="large-img" src="<?php// the_field('site_logo', 'option'); ?>" style=""/></a>
     </div>
     <nav>
       <div class="nav-mobile"><a id="navbar-toggle" href="#!"><span></span></a></div>
-      <?php wp_nav_menu(
+      <?php/* wp_nav_menu(
         array(
           'theme_location' => 'primary',
           'menu_id' => 'main-menu',
@@ -45,46 +45,10 @@
           'menu_class'=> 'nav-list',
           // 'walker' => new reach_walker()
         )
-      ); ?>
-      <!-- <ul class="nav-list">
-        <li>
-          <a href="#!">Home</a>
-        </li>
-        <li>
-          <a href="#!">Reach in the Community</a>
-          <ul class="navbar-dropdown">
-            <li>
-              <a href="#!">Community Voices</a>
-            </li>
-            <li>
-              <a href="#!">Engage</a>
-            </li>
-            <li>
-              <a href="#!">Stylus</a>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <a href="#!">Category</a>
-          <ul class="navbar-dropdown">
-            <li>
-              <a href="#!">Sass</a>
-            </li>
-            <li>
-              <a href="#!">Less</a>
-            </li>
-            <li>
-              <a href="#!">Stylus</a>
-            </li>
-          </ul>
-        </li>
-        <li>
-          <a href="#!">Contact</a>
-        </li>
-      </ul> -->
+      ); */?>
     </nav>
   </div>
-</section>
+</section> -->
 
 
 <header id="masthead" class="site-header" role="banner"></header>

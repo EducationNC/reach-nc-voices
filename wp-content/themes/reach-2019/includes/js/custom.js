@@ -44,12 +44,16 @@ jQuery(document).ready(function () {
              jquery('section.navigation').addClass('navPadding');
              jquery('.navbar-brand img').addClass('small-img');
              jquery('nav ul li ul li a').css({"background-color":"#DCDFE5"});
+             jquery('.sub-menu li a').css({"color":"#5C1043"});
+             jquery('nav ul li a').css({"color":"#5C1043"});
           }
           if (jquery(this).scrollTop() < 50) {
              jquery('section.navigation').removeClass('navBackground');
              jquery('section.navigation').removeClass('navPadding');
              jquery('.navbar-brand img').removeClass('small-img');
              jquery('nav ul li ul li a').css({"background-color":"transparent"});
+             jquery('.sub-menu li a').css({"color":"#FFFFFF"});
+             jquery('nav ul li a').css({"color":"#FFFFFF"});
           }
        });
     });

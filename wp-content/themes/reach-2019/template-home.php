@@ -5,18 +5,18 @@
  */
 
 get_header(); ?>
-<div class="masthead"
-     style="background-image: linear-gradient(rgba(0, 0, 0, .3), rgba(0, 0, 0, .3)), url(<?php the_field('background_header_image'); ?>);">
+<div class="masthead" style="background-image: linear-gradient(rgba(0, 0, 0, .3), rgba(0, 0, 0, .3)), url(<?php the_field('background_header_image');  ?>) no-repeat center center fixed;">
     <div class="container">
         <div class="intro-text">
-            <div class="intro-heading"><?php the_field('intro_heading'); ?></div>
+            <!-- <div class="intro-heading"><?php// the_field('intro_heading'); ?></div>
 
-            <div class="intro-lead-in"><?php the_field('intro_subheading'); ?></div>
+            <div class="intro-lead-in"><?php// the_field('intro_subheading'); ?></div> -->
             <!-- <div class="intro-lead-in" style="font-size:1em;margin:0;">A project of EducationNC</div> -->
 
 
-            <a class="btn btn-primary btn-xl js-scroll-trigger"
-               href="<?php// the_field('intro_buttons_link'); ?> #about"><?php the_field('intro_button'); ?></a>
+            <!-- <a class="btn btn-primary btn-xl js-scroll-trigger"
+               href="<?php// the_field('intro_buttons_link'); ?> #about"><?php// the_field('intro_button'); ?>
+            </a> -->
         </div>
     </div>
 </div>

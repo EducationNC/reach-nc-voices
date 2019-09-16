@@ -51,14 +51,13 @@ section {
   padding: 100px 0
 }
 
-section.navigation {
+/* section.navigation {
   z-index: 200;
 }
 
 .navigation {
   padding: 10px 0px;
-}
-
+} */
 .navPadding {
   padding: 0px;
 }
@@ -248,7 +247,7 @@ ul.dropdown-menu::after {
   } */
 }
 
-.masthead {
+/* .masthead {
   text-align: center;
   color: #fff;
   background-image: linear-gradient(rgba(0, 0, 0, .3), rgba(0, 0, 0, .3)), url(../img/background2.jpg);
@@ -256,6 +255,16 @@ ul.dropdown-menu::after {
   -moz-background-size: cover;
   -o-background-size: cover;
   background-size: cover
+} */
+.masthead {
+  background-image: url(../img/Reach-SiteBanner-4.png);
+  -webkit-background-size: contain;
+  -moz-background-size: contain;
+  -o-background-size: contain;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-color: #741b55;
 }
 
 .masthead .intro-text {
@@ -390,7 +399,8 @@ article {
   -moz-transition: all ease .5s;
   transition: all ease .5s;
   opacity: 0;
-  background: rgba(254, 209, 54, .9)
+  background: rgba(92, 173, 214, .9);
+  /* background: rgba(254, 209, 54, .9) */
 }
 
 #community .portfolio-item .portfolio-link .portfolio-hover:hover,
@@ -1575,17 +1585,28 @@ nav ul li a, nav ul li a:visited {
 nav ul li a {
   background: transparent;
   /* border-bottom: 2px solid transparent; */
-  color: #5C1043;
+  /* color: #5C1043; */
+  color: white;
 }
 
 nav ul li a:hover, nav ul li a:visited:hover {
   /* border-bottom: 2px solid white; */
   color: #3399CC;
+  color: #5CADD6;
   text-decoration: none;
 }
 
+.purple {
+  color: #741b55;
+}
+
+.blue {
+  color: #5CADD6;
+}
+
 .sub-menu li a {
-  color: #5C1043;
+  /* color: #5C1043; */
+  color: white;
 }
 
 .background-grey {
@@ -1609,6 +1630,7 @@ nav ul li ul li {
 nav ul li ul li a {
   padding: 15px;
   line-height: 20px;
+  /* color: white; */
 }
 
 .sub-menu {
@@ -1634,6 +1656,14 @@ nav ul li ul li a {
     display: block;
   }
 
+  .navigation {
+    padding: 0px 0px;
+  }
+
+  .nav-container {
+    padding: 0px;
+  }
+
   nav {
     width: 100%;
     padding: 55px 0 15px;
@@ -1648,9 +1678,8 @@ nav ul li ul li a {
   }
 
   nav ul li a {
-    padding: 15px;
+    padding: 30px 15px;
     line-height: 20px;
-    background: #262626;
   }
 
   nav ul li ul li a {
