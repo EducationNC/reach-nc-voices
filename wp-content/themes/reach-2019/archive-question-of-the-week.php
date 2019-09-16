@@ -10,7 +10,7 @@
 get_header(); ?>
 
 <?php // add the class "panel" below here to wrap the content-padder in Bootstrap style ;) ?>
-<div class="question-of-the-week">
+<div class="question-of-the-week-1">
     <div class="space-header"></div>
     <div class="container">
         <div class="row">
