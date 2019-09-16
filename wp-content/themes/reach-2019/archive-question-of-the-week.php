@@ -21,7 +21,7 @@ get_header(); ?>
 
                         <article id="post-<?php the_ID(); ?>" <?php post_class(); ?>>
 
-                            <div class="entry-content-1">
+                            <div class="entry-content">
 
                                 <div class="image-block" style="background-image:url('<?php echo get_the_post_thumbnail_url() ?>');">
                                 </div>
