@@ -11,7 +11,8 @@ body {
 }
 
 p {
-  line-height: 1.75
+  line-height: 1.75;
+  line-height: 6;
 }
 
 a {
@@ -78,7 +79,7 @@ section h3.section-subheading {
   font-family: Lato, sans-serif
 }
 
-.responsive-menu-submenu {
+ul.responsive-menu-submenu {
   padding-left: 25px !important;
 }
 
